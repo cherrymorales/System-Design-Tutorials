@@ -1,0 +1,14 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
+WORKDIR /src
+
+COPY src/backend ./src/backend
+COPY tests/backend ./tests/backend
+RUN dotnet restore ./src/backend/SystemDesignTutorials.LayeredMonolith.Web/SystemDesignTutorials.LayeredMonolith.Web.csproj
+RUN dotnet publish ./src/backend/SystemDesignTutorials.LayeredMonolith.Web/SystemDesignTutorials.LayeredMonolith.Web.csproj -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview
+WORKDIR /app
+COPY --from=build /app/publish .
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENTRYPOINT ["dotnet", "SystemDesignTutorials.LayeredMonolith.Web.dll"]

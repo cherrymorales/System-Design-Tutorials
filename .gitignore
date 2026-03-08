@@ -1,1 +1,5 @@
 .codex/
+**/node_modules/
+**/dist/
+**/bin/
+**/obj/
