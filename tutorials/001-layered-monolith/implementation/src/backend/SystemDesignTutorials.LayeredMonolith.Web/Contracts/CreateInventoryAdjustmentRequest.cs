@@ -5,5 +5,4 @@ public sealed record CreateInventoryAdjustmentRequest(
     Guid ProductId,
     int QuantityDelta,
     string ReasonCode,
-    string SubmittedBy,
     string? Notes);

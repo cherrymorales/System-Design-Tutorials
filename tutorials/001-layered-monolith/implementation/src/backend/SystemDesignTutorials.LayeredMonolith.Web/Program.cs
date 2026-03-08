@@ -20,16 +20,20 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapHealthChecks("/health");
 
-var api = app.MapGroup("/api");
-api.MapGet("/health", () => Results.Ok(new
+app.MapGet("/api/health", () => Results.Ok(new
 {
     status = "ok",
     service = "001-layered-monolith",
     timestamp = DateTimeOffset.UtcNow,
 }));
 
+app.MapAuthEndpoints();
+
+var api = app.MapGroup("/api").RequireAuthorization();
 api.MapCatalogEndpoints();
 api.MapInventoryEndpoints();
 api.MapWorkflowEndpoints();

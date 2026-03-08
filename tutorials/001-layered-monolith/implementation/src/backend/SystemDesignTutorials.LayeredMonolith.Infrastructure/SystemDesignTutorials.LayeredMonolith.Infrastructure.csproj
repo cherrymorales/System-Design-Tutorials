@@ -1,8 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\SystemDesignTutorials.LayeredMonolith.Application\SystemDesignTutorials.LayeredMonolith.Application.csproj" />
     <ProjectReference Include="..\SystemDesignTutorials.LayeredMonolith.Domain\SystemDesignTutorials.LayeredMonolith.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>

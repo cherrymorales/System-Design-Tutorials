@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using SystemDesignTutorials.LayeredMonolith.Domain.Enums;
 using SystemDesignTutorials.LayeredMonolith.Infrastructure.Persistence;
@@ -25,14 +26,19 @@ internal static class WorkflowEndpoints
         adjustments.MapPost("/{id:guid}/reject", RejectAdjustmentAsync);
     }
 
-    private static async Task<IResult> GetTransfersAsync(LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> GetTransfersAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        var data = await BuildTransferResponsesAsync(dbContext, cancellationToken);
+        var data = await BuildTransferResponsesAsync(user, dbContext, cancellationToken);
         return Results.Ok(data.OrderByDescending(item => item.CreatedAt));
     }
 
-    private static async Task<IResult> CreateTransferAsync(CreateStockTransferRequest request, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> CreateTransferAsync(CreateStockTransferRequest request, ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
+        if (!AccessControl.CanCreateTransfers(user))
+        {
+            return AccessControl.Forbidden("Only inventory planners and operations managers can create transfers.");
+        }
+
         var validationErrors = ValidateCreateStockTransferRequest(request);
         if (validationErrors.Count > 0)
         {
@@ -62,7 +68,10 @@ internal static class WorkflowEndpoints
             return Results.Conflict(new { message = "Transfers require both warehouses to be active." });
         }
 
-        var sourceInventory = await dbContext.InventoryItems.SingleOrDefaultAsync(item => item.ProductId == request.ProductId && item.WarehouseId == request.SourceWarehouseId, cancellationToken);
+        var sourceInventory = await dbContext.InventoryItems.SingleOrDefaultAsync(
+            item => item.ProductId == request.ProductId && item.WarehouseId == request.SourceWarehouseId,
+            cancellationToken);
+
         if (sourceInventory is null)
         {
             return Results.Conflict(new { message = "Source warehouse does not have inventory for this product." });
@@ -77,18 +86,25 @@ internal static class WorkflowEndpoints
             return Results.Conflict(new { message = exception.Message });
         }
 
-        var transfer = new Domain.Entities.StockTransfer(request.SourceWarehouseId, request.DestinationWarehouseId, request.ProductId, request.Quantity, request.RequestedBy.Trim(), request.Reason.Trim());
+        var transfer = new Domain.Entities.StockTransfer(
+            request.SourceWarehouseId,
+            request.DestinationWarehouseId,
+            request.ProductId,
+            request.Quantity,
+            AccessControl.GetRequiredEmail(user),
+            request.Reason.Trim());
+
         dbContext.StockTransfers.Add(transfer);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.Created($"/api/transfers/{transfer.Id}", ApiMappings.ToStockTransferResponse(transfer, product, source, destination));
     }
 
-    private static async Task<IResult> ApproveTransferAsync(Guid id, ApproveStockTransferRequest request, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> ApproveTransferAsync(Guid id, ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.ApprovedBy))
+        if (!AccessControl.CanApproveTransfers(user))
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]> { [nameof(request.ApprovedBy)] = ["Approver is required."] });
+            return AccessControl.Forbidden("Only inventory planners and operations managers can approve transfers.");
         }
 
         var transfer = await dbContext.StockTransfers.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
@@ -99,7 +115,7 @@ internal static class WorkflowEndpoints
 
         try
         {
-            transfer.Approve(request.ApprovedBy.Trim());
+            transfer.Approve(AccessControl.GetRequiredEmail(user));
         }
         catch (InvalidOperationException exception)
         {
@@ -107,14 +123,14 @@ internal static class WorkflowEndpoints
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return await BuildTransferResultAsync(dbContext, transfer.Id, cancellationToken);
+        return await BuildTransferResultAsync(user, dbContext, transfer.Id, cancellationToken);
     }
 
-    private static async Task<IResult> DispatchTransferAsync(Guid id, DispatchStockTransferRequest request, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> DispatchTransferAsync(Guid id, ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.DispatchedBy))
+        if (!AccessControl.CanDispatchTransfers(user))
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]> { [nameof(request.DispatchedBy)] = ["Dispatcher is required."] });
+            return AccessControl.Forbidden("Only warehouse operators and operations managers can dispatch transfers.");
         }
 
         var transfer = await dbContext.StockTransfers.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
@@ -123,7 +139,15 @@ internal static class WorkflowEndpoints
             return Results.NotFound(new { message = "Transfer not found." });
         }
 
-        var inventoryItem = await dbContext.InventoryItems.SingleOrDefaultAsync(item => item.ProductId == transfer.ProductId && item.WarehouseId == transfer.SourceWarehouseId, cancellationToken);
+        if (!await AccessControl.CanAccessWarehouseAsync(user, dbContext, transfer.SourceWarehouseId, cancellationToken))
+        {
+            return AccessControl.Forbidden("You do not have access to dispatch stock from this warehouse.");
+        }
+
+        var inventoryItem = await dbContext.InventoryItems.SingleOrDefaultAsync(
+            item => item.ProductId == transfer.ProductId && item.WarehouseId == transfer.SourceWarehouseId,
+            cancellationToken);
+
         if (inventoryItem is null)
         {
             return Results.Conflict(new { message = "Source inventory record not found for transfer dispatch." });
@@ -131,7 +155,7 @@ internal static class WorkflowEndpoints
 
         try
         {
-            transfer.Dispatch(request.DispatchedBy.Trim());
+            transfer.Dispatch(AccessControl.GetRequiredEmail(user));
             inventoryItem.DispatchReserved(transfer.Quantity);
         }
         catch (InvalidOperationException exception)
@@ -140,14 +164,14 @@ internal static class WorkflowEndpoints
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return await BuildTransferResultAsync(dbContext, transfer.Id, cancellationToken);
+        return await BuildTransferResultAsync(user, dbContext, transfer.Id, cancellationToken);
     }
 
-    private static async Task<IResult> ReceiveTransferAsync(Guid id, ReceiveStockTransferRequest request, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> ReceiveTransferAsync(Guid id, ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.ReceivedBy))
+        if (!AccessControl.CanReceiveTransfers(user))
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]> { [nameof(request.ReceivedBy)] = ["Receiver is required."] });
+            return AccessControl.Forbidden("Only warehouse operators and operations managers can receive transfers.");
         }
 
         var transfer = await dbContext.StockTransfers.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
@@ -156,11 +180,20 @@ internal static class WorkflowEndpoints
             return Results.NotFound(new { message = "Transfer not found." });
         }
 
-        var destinationInventory = await InventoryUtilities.GetOrCreateInventoryItemAsync(dbContext, transfer.ProductId, transfer.DestinationWarehouseId, cancellationToken);
+        if (!await AccessControl.CanAccessWarehouseAsync(user, dbContext, transfer.DestinationWarehouseId, cancellationToken))
+        {
+            return AccessControl.Forbidden("You do not have access to receive stock into this warehouse.");
+        }
+
+        var destinationInventory = await InventoryUtilities.GetOrCreateInventoryItemAsync(
+            dbContext,
+            transfer.ProductId,
+            transfer.DestinationWarehouseId,
+            cancellationToken);
 
         try
         {
-            transfer.Receive(request.ReceivedBy.Trim());
+            transfer.Receive(AccessControl.GetRequiredEmail(user));
             destinationInventory.Receive(transfer.Quantity);
         }
         catch (InvalidOperationException exception)
@@ -169,14 +202,14 @@ internal static class WorkflowEndpoints
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return await BuildTransferResultAsync(dbContext, transfer.Id, cancellationToken);
+        return await BuildTransferResultAsync(user, dbContext, transfer.Id, cancellationToken);
     }
 
-    private static async Task<IResult> CancelTransferAsync(Guid id, CancelStockTransferRequest request, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> CancelTransferAsync(Guid id, CancelStockTransferRequest request, ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.CancelledBy))
+        if (!AccessControl.CanCancelTransfers(user))
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]> { [nameof(request.CancelledBy)] = ["Cancelling user is required."] });
+            return AccessControl.Forbidden("Only operations managers can cancel transfers.");
         }
 
         var transfer = await dbContext.StockTransfers.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
@@ -187,31 +220,39 @@ internal static class WorkflowEndpoints
 
         try
         {
-            transfer.Cancel(request.CancelledBy.Trim(), request.CancellationReason?.Trim());
+            transfer.Cancel(AccessControl.GetRequiredEmail(user), request.CancellationReason?.Trim());
         }
         catch (InvalidOperationException exception)
         {
             return Results.Conflict(new { message = exception.Message });
         }
 
-        var sourceInventory = await dbContext.InventoryItems.SingleOrDefaultAsync(item => item.ProductId == transfer.ProductId && item.WarehouseId == transfer.SourceWarehouseId, cancellationToken);
+        var sourceInventory = await dbContext.InventoryItems.SingleOrDefaultAsync(
+            item => item.ProductId == transfer.ProductId && item.WarehouseId == transfer.SourceWarehouseId,
+            cancellationToken);
+
         if (sourceInventory is not null)
         {
             sourceInventory.ReleaseReservation(transfer.Quantity);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return await BuildTransferResultAsync(dbContext, transfer.Id, cancellationToken);
+        return await BuildTransferResultAsync(user, dbContext, transfer.Id, cancellationToken);
     }
 
-    private static async Task<IResult> GetAdjustmentsAsync(LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> GetAdjustmentsAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        var data = await BuildAdjustmentResponsesAsync(dbContext, cancellationToken);
+        var data = await BuildAdjustmentResponsesAsync(user, dbContext, cancellationToken);
         return Results.Ok(data.OrderByDescending(item => item.CreatedAt));
     }
 
-    private static async Task<IResult> GetPendingAdjustmentsAsync(LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> GetPendingAdjustmentsAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
+        if (!AccessControl.CanReviewAdjustments(user))
+        {
+            return AccessControl.Forbidden("Only operations managers can review pending adjustments.");
+        }
+
         var rows = await (
             from adjustment in dbContext.InventoryAdjustments.AsNoTracking()
             where adjustment.Status == AdjustmentStatus.PendingApproval
@@ -220,15 +261,27 @@ internal static class WorkflowEndpoints
             select new { adjustment, product, warehouse })
             .ToListAsync(cancellationToken);
 
-        return Results.Ok(rows.Select(row => ApiMappings.ToInventoryAdjustmentResponse(row.adjustment, row.product, row.warehouse)).OrderByDescending(item => item.CreatedAt));
+        return Results.Ok(rows
+            .Select(row => ApiMappings.ToInventoryAdjustmentResponse(row.adjustment, row.product, row.warehouse))
+            .OrderByDescending(item => item.CreatedAt));
     }
 
-    private static async Task<IResult> CreateAdjustmentAsync(CreateInventoryAdjustmentRequest request, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> CreateAdjustmentAsync(CreateInventoryAdjustmentRequest request, ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
+        if (!AccessControl.CanCreateAdjustments(user))
+        {
+            return AccessControl.Forbidden("Only warehouse operators and operations managers can create adjustments.");
+        }
+
         var validationErrors = ValidateCreateInventoryAdjustmentRequest(request);
         if (validationErrors.Count > 0)
         {
             return Results.ValidationProblem(validationErrors);
+        }
+
+        if (!await AccessControl.CanAccessWarehouseAsync(user, dbContext, request.WarehouseId, cancellationToken))
+        {
+            return AccessControl.Forbidden("You do not have access to adjust stock for this warehouse.");
         }
 
         var product = await dbContext.Products.SingleOrDefaultAsync(item => item.Id == request.ProductId, cancellationToken);
@@ -254,7 +307,13 @@ internal static class WorkflowEndpoints
         }
 
         var inventoryItem = await InventoryUtilities.GetOrCreateInventoryItemAsync(dbContext, request.ProductId, request.WarehouseId, cancellationToken);
-        var adjustment = new Domain.Entities.InventoryAdjustment(request.WarehouseId, request.ProductId, request.QuantityDelta, request.ReasonCode.Trim(), request.SubmittedBy.Trim(), request.Notes?.Trim());
+        var adjustment = new Domain.Entities.InventoryAdjustment(
+            request.WarehouseId,
+            request.ProductId,
+            request.QuantityDelta,
+            request.ReasonCode.Trim(),
+            AccessControl.GetRequiredEmail(user),
+            request.Notes?.Trim());
 
         try
         {
@@ -271,14 +330,14 @@ internal static class WorkflowEndpoints
 
         dbContext.InventoryAdjustments.Add(adjustment);
         await dbContext.SaveChangesAsync(cancellationToken);
-        return await BuildAdjustmentResultAsync(dbContext, adjustment.Id, cancellationToken, created: true);
+        return await BuildAdjustmentResultAsync(user, dbContext, adjustment.Id, cancellationToken, created: true);
     }
 
-    private static async Task<IResult> ApproveAdjustmentAsync(Guid id, ApproveInventoryAdjustmentRequest request, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> ApproveAdjustmentAsync(Guid id, ApproveInventoryAdjustmentRequest request, ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.ApprovedBy))
+        if (!AccessControl.CanReviewAdjustments(user))
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]> { [nameof(request.ApprovedBy)] = ["Approver is required."] });
+            return AccessControl.Forbidden("Only operations managers can approve adjustments.");
         }
 
         var adjustment = await dbContext.InventoryAdjustments.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
@@ -291,7 +350,7 @@ internal static class WorkflowEndpoints
 
         try
         {
-            adjustment.Approve(request.ApprovedBy.Trim(), request.Notes?.Trim());
+            adjustment.Approve(AccessControl.GetRequiredEmail(user), request.Notes?.Trim());
             inventoryItem.Adjust(adjustment.QuantityDelta);
         }
         catch (InvalidOperationException exception)
@@ -300,14 +359,14 @@ internal static class WorkflowEndpoints
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return await BuildAdjustmentResultAsync(dbContext, adjustment.Id, cancellationToken, created: false);
+        return await BuildAdjustmentResultAsync(user, dbContext, adjustment.Id, cancellationToken, created: false);
     }
 
-    private static async Task<IResult> RejectAdjustmentAsync(Guid id, RejectInventoryAdjustmentRequest request, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> RejectAdjustmentAsync(Guid id, RejectInventoryAdjustmentRequest request, ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.RejectedBy))
+        if (!AccessControl.CanReviewAdjustments(user))
         {
-            return Results.ValidationProblem(new Dictionary<string, string[]> { [nameof(request.RejectedBy)] = ["Rejecting user is required."] });
+            return AccessControl.Forbidden("Only operations managers can reject adjustments.");
         }
 
         var adjustment = await dbContext.InventoryAdjustments.SingleOrDefaultAsync(item => item.Id == id, cancellationToken);
@@ -318,7 +377,7 @@ internal static class WorkflowEndpoints
 
         try
         {
-            adjustment.Reject(request.RejectedBy.Trim(), request.Notes?.Trim());
+            adjustment.Reject(AccessControl.GetRequiredEmail(user), request.Notes?.Trim());
         }
         catch (InvalidOperationException exception)
         {
@@ -326,44 +385,66 @@ internal static class WorkflowEndpoints
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return await BuildAdjustmentResultAsync(dbContext, adjustment.Id, cancellationToken, created: false);
+        return await BuildAdjustmentResultAsync(user, dbContext, adjustment.Id, cancellationToken, created: false);
     }
 
-    private static async Task<List<StockTransferResponse>> BuildTransferResponsesAsync(LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<List<StockTransferResponse>> BuildTransferResponsesAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        var rows = await (
+        var assignedWarehouseIds = await AccessControl.GetAssignedWarehouseIdsAsync(user, dbContext, cancellationToken);
+        var query =
             from transfer in dbContext.StockTransfers.AsNoTracking()
             join product in dbContext.Products.AsNoTracking() on transfer.ProductId equals product.Id
             join source in dbContext.Warehouses.AsNoTracking() on transfer.SourceWarehouseId equals source.Id
             join destination in dbContext.Warehouses.AsNoTracking() on transfer.DestinationWarehouseId equals destination.Id
-            select new { transfer, product, source, destination })
-            .ToListAsync(cancellationToken);
+            select new { transfer, product, source, destination };
 
+        if (AccessControl.IsOperator(user))
+        {
+            query = query.Where(row =>
+                assignedWarehouseIds.Contains(row.source.Id) ||
+                assignedWarehouseIds.Contains(row.destination.Id));
+        }
+
+        var rows = await query.ToListAsync(cancellationToken);
         return rows.Select(row => ApiMappings.ToStockTransferResponse(row.transfer, row.product, row.source, row.destination)).ToList();
     }
 
-    private static async Task<List<InventoryAdjustmentResponse>> BuildAdjustmentResponsesAsync(LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<List<InventoryAdjustmentResponse>> BuildAdjustmentResponsesAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        var rows = await (
+        var assignedWarehouseIds = await AccessControl.GetAssignedWarehouseIdsAsync(user, dbContext, cancellationToken);
+        var query =
             from adjustment in dbContext.InventoryAdjustments.AsNoTracking()
             join product in dbContext.Products.AsNoTracking() on adjustment.ProductId equals product.Id
             join warehouse in dbContext.Warehouses.AsNoTracking() on adjustment.WarehouseId equals warehouse.Id
-            select new { adjustment, product, warehouse })
-            .ToListAsync(cancellationToken);
+            select new { adjustment, product, warehouse };
 
+        if (AccessControl.IsOperator(user))
+        {
+            query = query.Where(row => assignedWarehouseIds.Contains(row.warehouse.Id));
+        }
+
+        var rows = await query.ToListAsync(cancellationToken);
         return rows.Select(row => ApiMappings.ToInventoryAdjustmentResponse(row.adjustment, row.product, row.warehouse)).ToList();
     }
 
-    private static async Task<IResult> BuildTransferResultAsync(LayeredMonolithDbContext dbContext, Guid transferId, CancellationToken cancellationToken)
+    private static async Task<IResult> BuildTransferResultAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, Guid transferId, CancellationToken cancellationToken)
     {
-        var responses = await BuildTransferResponsesAsync(dbContext, cancellationToken);
-        return Results.Ok(responses.Single(item => item.Id == transferId));
+        var responses = await BuildTransferResponsesAsync(user, dbContext, cancellationToken);
+        var transfer = responses.SingleOrDefault(item => item.Id == transferId);
+        return transfer is null
+            ? AccessControl.Forbidden("You do not have access to this transfer.")
+            : Results.Ok(transfer);
     }
 
-    private static async Task<IResult> BuildAdjustmentResultAsync(LayeredMonolithDbContext dbContext, Guid adjustmentId, CancellationToken cancellationToken, bool created)
+    private static async Task<IResult> BuildAdjustmentResultAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, Guid adjustmentId, CancellationToken cancellationToken, bool created)
     {
-        var responses = await BuildAdjustmentResponsesAsync(dbContext, cancellationToken);
-        var adjustment = responses.Single(item => item.Id == adjustmentId);
+        var responses = await BuildAdjustmentResponsesAsync(user, dbContext, cancellationToken);
+        var adjustment = responses.SingleOrDefault(item => item.Id == adjustmentId);
+        if (adjustment is null)
+        {
+            return AccessControl.Forbidden("You do not have access to this adjustment.");
+        }
+
         return created ? Results.Created($"/api/adjustments/{adjustment.Id}", adjustment) : Results.Ok(adjustment);
     }
 
@@ -375,7 +456,6 @@ internal static class WorkflowEndpoints
         if (request.SourceWarehouseId == request.DestinationWarehouseId && request.SourceWarehouseId != Guid.Empty) errors[nameof(request.DestinationWarehouseId)] = ["Source and destination must be different."];
         if (request.ProductId == Guid.Empty) errors[nameof(request.ProductId)] = ["Product is required."];
         if (request.Quantity <= 0) errors[nameof(request.Quantity)] = ["Quantity must be greater than zero."];
-        if (string.IsNullOrWhiteSpace(request.RequestedBy)) errors[nameof(request.RequestedBy)] = ["Requested by is required."];
         if (string.IsNullOrWhiteSpace(request.Reason)) errors[nameof(request.Reason)] = ["Reason is required."];
         return errors;
     }
@@ -387,7 +467,6 @@ internal static class WorkflowEndpoints
         if (request.ProductId == Guid.Empty) errors[nameof(request.ProductId)] = ["Product is required."];
         if (request.QuantityDelta == 0) errors[nameof(request.QuantityDelta)] = ["Quantity delta cannot be zero."];
         if (string.IsNullOrWhiteSpace(request.ReasonCode)) errors[nameof(request.ReasonCode)] = ["Reason code is required."];
-        if (string.IsNullOrWhiteSpace(request.SubmittedBy)) errors[nameof(request.SubmittedBy)] = ["Submitted by is required."];
         return errors;
     }
 }

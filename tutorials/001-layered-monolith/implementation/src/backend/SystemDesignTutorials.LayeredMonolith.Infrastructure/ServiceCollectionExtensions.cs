@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -25,7 +26,43 @@ public static class ServiceCollectionExtensions
                 options.Password.RequireUppercase = false;
             })
             .AddRoles<IdentityRole<Guid>>()
+            .AddSignInManager()
             .AddEntityFrameworkStores<LayeredMonolithDbContext>();
+
+        services
+            .AddAuthentication(IdentityConstants.ApplicationScheme)
+            .AddIdentityCookies(options =>
+            {
+                var applicationCookie = options.ApplicationCookie ?? throw new InvalidOperationException("Application cookie configuration is unavailable.");
+                applicationCookie.Configure(cookie =>
+                {
+                    cookie.Cookie.Name = "layeredmonolith.auth";
+                    cookie.Events.OnRedirectToLogin = context =>
+                    {
+                        if (context.Request.Path.StartsWithSegments("/api"))
+                        {
+                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            return Task.CompletedTask;
+                        }
+
+                        context.Response.Redirect(context.RedirectUri);
+                        return Task.CompletedTask;
+                    };
+                    cookie.Events.OnRedirectToAccessDenied = context =>
+                    {
+                        if (context.Request.Path.StartsWithSegments("/api"))
+                        {
+                            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                            return Task.CompletedTask;
+                        }
+
+                        context.Response.Redirect(context.RedirectUri);
+                        return Task.CompletedTask;
+                    };
+                });
+            });
+
+        services.AddAuthorization();
 
         return services;
     }

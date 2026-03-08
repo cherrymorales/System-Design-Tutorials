@@ -4,16 +4,19 @@ This folder contains the working implementation for the `001-layered-monolith` t
 
 ## Current Phase
 
-Phase 3 is in progress.
+Phase 4 is in progress.
 
 Included now:
 
 - backend solution scaffold with seeded startup data
-- React frontend for catalog and operational inventory workflows
+- React frontend with login, protected routes, and a role-aware inventory console
 - PostgreSQL-backed infrastructure baseline
 - Docker support for the API and database
 - domain tests for inventory, product, warehouse, transfer, and adjustment behavior
 - automatic schema creation on application startup for clean local databases
+- ASP.NET Core Identity with seeded users and cookie-based authentication
+- role-based authorization for catalog, warehouse, inventory, transfer, and adjustment workflows
+- warehouse assignment filtering for operator accounts
 - CRUD endpoints for products and warehouses
 - inventory receipt workflow
 - stock transfer workflow with request, approve, dispatch, receive, and cancel transitions
@@ -46,6 +49,9 @@ Available endpoints:
 
 - `GET /health`
 - `GET /api/health`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
 - `GET /api/products`
 - `GET /api/products/{id}`
 - `POST /api/products`
@@ -74,11 +80,21 @@ Available endpoints:
 
 Seeded users:
 
-- `manager@layeredmonolith.local`
-- `planner@layeredmonolith.local`
-- `purchasing@layeredmonolith.local`
-- `operator.brisbane@layeredmonolith.local`
+- `manager@layeredmonolith.local` (`OperationsManager`)
+- `planner@layeredmonolith.local` (`InventoryPlanner`)
+- `purchasing@layeredmonolith.local` (`PurchasingOfficer`)
+- `operator.brisbane@layeredmonolith.local` (`WarehouseOperator`)
 - password for all seeded users: `Password123!`
+
+Authorization highlights:
+
+- all `/api/*` endpoints except `/api/health` and `/api/auth/login` require authentication
+- operators are limited to their assigned warehouses
+- product writes are restricted to purchasing officers and managers
+- warehouse writes are restricted to managers
+- transfer creation and approval are restricted to planners and managers
+- transfer dispatch and receive are restricted to operators for their assigned warehouses or managers
+- adjustment approval and rejection are restricted to managers
 
 ### Frontend
 
@@ -112,15 +128,23 @@ The database container is intentionally ephemeral:
 
 ## Verification
 
-The current Phase 3 implementation has been verified with:
+The current Phase 4 implementation has been verified with:
 
 - `dotnet test` passing with 10 tests
 - `npm run build` passing for the React frontend
-- Docker runtime checks covering receipt creation, transfer progression to `Received`, and adjustment approval
+- `docker compose up -d --build` passing
+- runtime checks confirming:
+  - unauthenticated API access returns `401`
+  - seeded login works through `/api/auth/login`
+  - `/api/auth/me` returns the authenticated session
+  - manager accounts can view all three warehouses
+  - the Brisbane operator only sees the assigned warehouse
+  - the Brisbane operator is blocked from creating transfers
+  - receipt creation records the authenticated operator identity on the server
 
 ## Next Implementation Targets
 
-- add authentication screens and protected routes
-- enforce role-based restrictions from actual signed-in identities instead of demo payload fields
-- add reporting screens beyond the low-stock dashboard
-- expand API tests beyond current domain-focused coverage
+- add backend integration tests for authorization and endpoint behavior
+- add frontend test coverage
+- expand reporting screens beyond the low-stock dashboard
+- refine operator-specific UX based on assigned warehouse defaults

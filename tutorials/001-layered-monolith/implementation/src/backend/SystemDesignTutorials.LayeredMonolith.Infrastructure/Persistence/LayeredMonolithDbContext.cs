@@ -15,6 +15,7 @@ public sealed class LayeredMonolithDbContext(DbContextOptions<LayeredMonolithDbC
     public DbSet<InventoryReceipt> InventoryReceipts => Set<InventoryReceipt>();
     public DbSet<StockTransfer> StockTransfers => Set<StockTransfer>();
     public DbSet<InventoryAdjustment> InventoryAdjustments => Set<InventoryAdjustment>();
+    public DbSet<UserWarehouseAssignment> UserWarehouseAssignments => Set<UserWarehouseAssignment>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -73,6 +74,11 @@ public sealed class LayeredMonolithDbContext(DbContextOptions<LayeredMonolithDbC
             entity.Property(x => x.ApprovedBy).HasMaxLength(256);
             entity.Property(x => x.RejectedBy).HasMaxLength(256);
             entity.Property(x => x.Notes).HasMaxLength(512);
+        });
+
+        builder.Entity<UserWarehouseAssignment>(entity =>
+        {
+            entity.HasKey(x => new { x.UserId, x.WarehouseId });
         });
     }
 }

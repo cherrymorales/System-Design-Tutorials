@@ -1,3 +1,3 @@
 namespace SystemDesignTutorials.LayeredMonolith.Web.Contracts;
 
-public sealed record RejectInventoryAdjustmentRequest(string RejectedBy, string? Notes);
+public sealed record RejectInventoryAdjustmentRequest(string? Notes);

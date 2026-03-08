@@ -5,5 +5,4 @@ public sealed record CreateStockTransferRequest(
     Guid DestinationWarehouseId,
     Guid ProductId,
     int Quantity,
-    string RequestedBy,
     string Reason);

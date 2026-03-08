@@ -4,5 +4,4 @@ public sealed record CreateInventoryReceiptRequest(
     Guid WarehouseId,
     Guid ProductId,
     int QuantityReceived,
-    string SupplierReference,
-    string ReceivedBy);
+    string SupplierReference);

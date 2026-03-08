@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using SystemDesignTutorials.LayeredMonolith.Domain.Enums;
 using SystemDesignTutorials.LayeredMonolith.Infrastructure.Persistence;
@@ -20,38 +21,65 @@ internal static class InventoryEndpoints
         reports.MapGet("/low-stock", GetLowStockReportAsync);
     }
 
-    private static async Task<IResult> GetInventorySummaryAsync(LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> GetInventorySummaryAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        var rows = await (
+        var assignedWarehouseIds = await AccessControl.GetAssignedWarehouseIdsAsync(user, dbContext, cancellationToken);
+        var query =
             from item in dbContext.InventoryItems.AsNoTracking()
             join product in dbContext.Products.AsNoTracking() on item.ProductId equals product.Id
             join warehouse in dbContext.Warehouses.AsNoTracking() on item.WarehouseId equals warehouse.Id
-            orderby warehouse.Name, product.Name
-            select new { item, product, warehouse })
+            select new { item, product, warehouse };
+
+        if (AccessControl.IsOperator(user))
+        {
+            query = query.Where(row => assignedWarehouseIds.Contains(row.warehouse.Id));
+        }
+
+        var rows = await query
+            .OrderBy(row => row.warehouse.Name)
+            .ThenBy(row => row.product.Name)
             .ToListAsync(cancellationToken);
 
         return Results.Ok(rows.Select(row => ApiMappings.ToInventorySummaryResponse(row.item, row.product, row.warehouse)));
     }
 
-    private static async Task<IResult> GetInventoryReceiptsAsync(LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> GetInventoryReceiptsAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        var rows = await (
+        var assignedWarehouseIds = await AccessControl.GetAssignedWarehouseIdsAsync(user, dbContext, cancellationToken);
+        var query =
             from receipt in dbContext.InventoryReceipts.AsNoTracking()
             join product in dbContext.Products.AsNoTracking() on receipt.ProductId equals product.Id
             join warehouse in dbContext.Warehouses.AsNoTracking() on receipt.WarehouseId equals warehouse.Id
-            orderby receipt.ReceivedAt descending
-            select new { receipt, product, warehouse })
+            select new { receipt, product, warehouse };
+
+        if (AccessControl.IsOperator(user))
+        {
+            query = query.Where(row => assignedWarehouseIds.Contains(row.warehouse.Id));
+        }
+
+        var rows = await query
+            .OrderByDescending(row => row.receipt.ReceivedAt)
             .ToListAsync(cancellationToken);
 
         return Results.Ok(rows.Select(row => ApiMappings.ToInventoryReceiptResponse(row.receipt, row.product, row.warehouse)));
     }
 
-    private static async Task<IResult> CreateInventoryReceiptAsync(CreateInventoryReceiptRequest request, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> CreateInventoryReceiptAsync(CreateInventoryReceiptRequest request, ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
+        if (!AccessControl.CanRecordReceipts(user))
+        {
+            return AccessControl.Forbidden("Only warehouse operators, purchasing officers, and operations managers can record receipts.");
+        }
+
         var validationErrors = ValidateCreateInventoryReceiptRequest(request);
         if (validationErrors.Count > 0)
         {
             return Results.ValidationProblem(validationErrors);
+        }
+
+        if (!await AccessControl.CanAccessWarehouseAsync(user, dbContext, request.WarehouseId, cancellationToken))
+        {
+            return AccessControl.Forbidden("You do not have access to receive stock for this warehouse.");
         }
 
         var product = await dbContext.Products.SingleOrDefaultAsync(item => item.Id == request.ProductId, cancellationToken);
@@ -87,23 +115,40 @@ internal static class InventoryEndpoints
             return Results.Conflict(new { message = exception.Message });
         }
 
-        var receipt = new Domain.Entities.InventoryReceipt(request.WarehouseId, request.ProductId, request.QuantityReceived, request.SupplierReference.Trim(), request.ReceivedBy.Trim());
+        var receipt = new Domain.Entities.InventoryReceipt(
+            request.WarehouseId,
+            request.ProductId,
+            request.QuantityReceived,
+            request.SupplierReference.Trim(),
+            AccessControl.GetRequiredEmail(user));
+
         dbContext.InventoryReceipts.Add(receipt);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Results.Created($"/api/inventory/receipts/{receipt.Id}", ApiMappings.ToInventoryReceiptResponse(receipt, product, warehouse));
     }
 
-    private static async Task<IResult> GetLowStockReportAsync(LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
+    private static async Task<IResult> GetLowStockReportAsync(ClaimsPrincipal user, LayeredMonolithDbContext dbContext, CancellationToken cancellationToken)
     {
-        var rows = await (
+        var assignedWarehouseIds = await AccessControl.GetAssignedWarehouseIdsAsync(user, dbContext, cancellationToken);
+        var query =
             from item in dbContext.InventoryItems.AsNoTracking()
             join product in dbContext.Products.AsNoTracking() on item.ProductId equals product.Id
             join warehouse in dbContext.Warehouses.AsNoTracking() on item.WarehouseId equals warehouse.Id
             let availableQuantity = item.QuantityOnHand - item.QuantityReserved
             where availableQuantity <= item.ReorderThreshold
-            orderby warehouse.Name, availableQuantity, product.Name
-            select new { item, product, warehouse })
+            select new { item, product, warehouse, availableQuantity };
+
+        if (AccessControl.IsOperator(user))
+        {
+            query = query.Where(row => assignedWarehouseIds.Contains(row.warehouse.Id));
+        }
+
+        var rows = await query
+            .OrderBy(row => row.warehouse.Name)
+            .ThenBy(row => row.availableQuantity)
+            .ThenBy(row => row.product.Name)
+            .Select(row => new { row.item, row.product, row.warehouse })
             .ToListAsync(cancellationToken);
 
         return Results.Ok(rows.Select(row => ApiMappings.ToLowStockReportResponse(row.item, row.product, row.warehouse)));
@@ -116,16 +161,22 @@ internal static class InventoryEndpoints
         if (request.ProductId == Guid.Empty) errors[nameof(request.ProductId)] = ["Product is required."];
         if (request.QuantityReceived <= 0) errors[nameof(request.QuantityReceived)] = ["Quantity must be greater than zero."];
         if (string.IsNullOrWhiteSpace(request.SupplierReference)) errors[nameof(request.SupplierReference)] = ["Supplier reference is required."];
-        if (string.IsNullOrWhiteSpace(request.ReceivedBy)) errors[nameof(request.ReceivedBy)] = ["Received by is required."];
         return errors;
     }
 }
 
 internal static class InventoryUtilities
 {
-    public static async Task<Domain.Entities.InventoryItem> GetOrCreateInventoryItemAsync(LayeredMonolithDbContext dbContext, Guid productId, Guid warehouseId, CancellationToken cancellationToken)
+    public static async Task<Domain.Entities.InventoryItem> GetOrCreateInventoryItemAsync(
+        LayeredMonolithDbContext dbContext,
+        Guid productId,
+        Guid warehouseId,
+        CancellationToken cancellationToken)
     {
-        var inventoryItem = await dbContext.InventoryItems.SingleOrDefaultAsync(item => item.ProductId == productId && item.WarehouseId == warehouseId, cancellationToken);
+        var inventoryItem = await dbContext.InventoryItems.SingleOrDefaultAsync(
+            item => item.ProductId == productId && item.WarehouseId == warehouseId,
+            cancellationToken);
+
         if (inventoryItem is not null)
         {
             return inventoryItem;

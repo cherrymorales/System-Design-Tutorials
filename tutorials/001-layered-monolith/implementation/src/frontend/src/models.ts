@@ -4,6 +4,18 @@ export type HealthResponse = {
   timestamp: string
 }
 
+export type UserSession = {
+  displayName: string
+  email: string
+  roles: string[]
+  assignedWarehouseIds: string[]
+}
+
+export type LoginFormState = {
+  email: string
+  password: string
+}
+
 export type Product = {
   id: string
   sku: string
@@ -139,7 +151,6 @@ export type ReceiptFormState = {
   productId: string
   quantityReceived: string
   supplierReference: string
-  receivedBy: string
 }
 
 export type TransferFormState = {
@@ -147,7 +158,6 @@ export type TransferFormState = {
   destinationWarehouseId: string
   productId: string
   quantity: string
-  requestedBy: string
   reason: string
 }
 
@@ -156,15 +166,19 @@ export type AdjustmentFormState = {
   productId: string
   quantityDelta: string
   reasonCode: string
-  submittedBy: string
   notes: string
 }
 
-export const demoUsers = {
-  manager: 'manager@layeredmonolith.local',
-  planner: 'planner@layeredmonolith.local',
-  purchasing: 'purchasing@layeredmonolith.local',
-  operator: 'operator.brisbane@layeredmonolith.local',
+export const seededUsers = [
+  { email: 'manager@layeredmonolith.local', label: 'Operations Manager', role: 'OperationsManager' },
+  { email: 'planner@layeredmonolith.local', label: 'Inventory Planner', role: 'InventoryPlanner' },
+  { email: 'purchasing@layeredmonolith.local', label: 'Purchasing Officer', role: 'PurchasingOfficer' },
+  { email: 'operator.brisbane@layeredmonolith.local', label: 'Brisbane Operator', role: 'WarehouseOperator' },
+] as const
+
+export const defaultLoginForm: LoginFormState = {
+  email: seededUsers[0].email,
+  password: 'Password123!',
 }
 
 export const emptyProductForm: ProductFormState = {
@@ -186,7 +200,6 @@ export const createEmptyReceiptForm = (): ReceiptFormState => ({
   productId: '',
   quantityReceived: '',
   supplierReference: '',
-  receivedBy: demoUsers.operator,
 })
 
 export const createEmptyTransferForm = (): TransferFormState => ({
@@ -194,7 +207,6 @@ export const createEmptyTransferForm = (): TransferFormState => ({
   destinationWarehouseId: '',
   productId: '',
   quantity: '',
-  requestedBy: demoUsers.planner,
   reason: '',
 })
 
@@ -203,6 +215,5 @@ export const createEmptyAdjustmentForm = (): AdjustmentFormState => ({
   productId: '',
   quantityDelta: '',
   reasonCode: '',
-  submittedBy: demoUsers.operator,
   notes: '',
 })

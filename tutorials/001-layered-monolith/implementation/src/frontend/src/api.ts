@@ -1,8 +1,29 @@
-export async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, init)
+export class ApiError extends Error {
+  public readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
+export function isApiError(error: unknown): error is ApiError {
+  return error instanceof ApiError
+}
+
+export async function fetchJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const response = await fetch(input, {
+    credentials: 'include',
+    ...init,
+  })
 
   if (!response.ok) {
-    throw new Error(await readErrorMessage(response))
+    throw new ApiError(await readErrorMessage(response), response.status)
+  }
+
+  if (response.status === 204) {
+    return undefined as T
   }
 
   return (await response.json()) as T
@@ -33,5 +54,9 @@ async function readErrorMessage(response: Response): Promise<string> {
     // Ignore parse failures and fall back to status text.
   }
 
-  return `Request failed with status ${response.status}`
+  return response.status === 401
+    ? 'Authentication is required.'
+    : response.status === 403
+      ? 'You do not have permission to perform this action.'
+      : `Request failed with status ${response.status}`
 }
