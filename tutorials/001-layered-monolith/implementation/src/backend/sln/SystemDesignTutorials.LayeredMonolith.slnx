@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="../../../tests/backend/SystemDesignTutorials.LayeredMonolith.Tests/SystemDesignTutorials.LayeredMonolith.Tests.csproj" />
+  <Project Path="../SystemDesignTutorials.LayeredMonolith.Application/SystemDesignTutorials.LayeredMonolith.Application.csproj" />
+  <Project Path="../SystemDesignTutorials.LayeredMonolith.Domain/SystemDesignTutorials.LayeredMonolith.Domain.csproj" />
+  <Project Path="../SystemDesignTutorials.LayeredMonolith.Infrastructure/SystemDesignTutorials.LayeredMonolith.Infrastructure.csproj" />
+  <Project Path="../SystemDesignTutorials.LayeredMonolith.Web/SystemDesignTutorials.LayeredMonolith.Web.csproj" />
+</Solution>

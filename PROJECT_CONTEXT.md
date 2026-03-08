@@ -56,11 +56,19 @@ Recommended structure:
 tutorials/
   001-system-design-name/
     README.md
-    learning-guide.md
-    project-plan.md
-    architecture.md
-    implementation-blueprint.md
-    deployment.md
+    docs/
+      README.md
+      learning-guide.md
+      project-plan.md
+      architecture.md
+      implementation-blueprint.md
+      deployment.md
+    implementation/
+      README.md
+      src/
+      tests/
+      infra/
+      docker/
 ```
 
 Current planned order:
@@ -83,9 +91,13 @@ Each tutorial document should cover:
 - Example project idea
 - Learning objectives and teaching notes
 
-The `README.md` should act as the entry point, while supporting documents can go deeper into architecture, implementation, and deployment.
-The `learning-guide.md` should explain what the reader is supposed to learn, what concepts to focus on, common misunderstandings, and review questions.
-The `project-plan.md` should define scope, phases, risks, and readiness gates before implementation begins.
+The root `README.md` should act as the entry point for that system design folder.
+The `docs/` folder should contain the learning and specification documents.
+The `implementation/` folder should contain the actual buildable implementation for that system design.
+The `docs/learning-guide.md` file should explain what the reader is supposed to learn, what concepts to focus on, common misunderstandings, and review questions.
+The `docs/project-plan.md` file should define scope, phases, risks, and readiness gates before implementation begins.
+
+This structure is mandatory for all numbered system design folders so the repository stays consistent as more architectures are added.
 
 ## How This Context Document Should Be Used
 
