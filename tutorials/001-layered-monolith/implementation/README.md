@@ -4,7 +4,7 @@ This folder contains the working implementation for the `001-layered-monolith` t
 
 ## Current Phase
 
-Phase 4 is in progress.
+Phase 4 is complete.
 
 Included now:
 
@@ -22,6 +22,13 @@ Included now:
 - stock transfer workflow with request, approve, dispatch, receive, and cancel transitions
 - inventory adjustment workflow with threshold-based approval
 - low-stock reporting endpoint and dashboard view
+
+Not yet included:
+
+- backend integration tests for API and authorization behavior
+- frontend automated tests
+- single-container packaging that serves the built frontend from ASP.NET Core
+- production-grade migration workflow
 
 ## Structure
 
@@ -142,9 +149,21 @@ The current Phase 4 implementation has been verified with:
   - the Brisbane operator is blocked from creating transfers
   - receipt creation records the authenticated operator identity on the server
 
-## Next Implementation Targets
+## Current Caveats
+
+This is a good tutorial baseline, but it is not yet a production-ready template.
+
+Current caveats:
+
+- most workflow orchestration still lives in endpoint modules rather than richer application services
+- the frontend is still a simple tutorial console rather than a feature-sliced app
+- the local database workflow recreates state instead of applying migrations
+- automated coverage is still limited
+
+## Recommended Next Targets
 
 - add backend integration tests for authorization and endpoint behavior
 - add frontend test coverage
+- package the built SPA into the ASP.NET Core app for a single-container app runtime
+- move workflow orchestration into clearer application-layer services
 - expand reporting screens beyond the low-stock dashboard
-- refine operator-specific UX based on assigned warehouse defaults

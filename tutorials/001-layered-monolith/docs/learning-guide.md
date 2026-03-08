@@ -4,7 +4,7 @@
 
 This document explains what a learner should take away from the layered monolith tutorial.
 
-The goal is not only to understand the example inventory system, but to understand why this system design works well for it.
+The goal is not only to understand the inventory system, but also to understand why this system design works well for it and where the current implementation is intentionally simplified.
 
 ## Learning Objectives
 
@@ -15,26 +15,27 @@ After studying this tutorial, the learner should be able to:
 - identify which kinds of systems fit a layered monolith well
 - describe the responsibility of each layer
 - explain why strong consistency and a single relational database fit this example
+- explain why auth and authorization rules are architectural concerns, not only UI concerns
 - recognize when a layered monolith should evolve into a modular monolith
 
 ## What To Focus On
 
 ### 1. One Deployable Unit Does Not Mean Bad Design
 
-The main lesson is that a single deployable application can still have strong internal structure.
+A single deployable application can still have strong internal structure.
 
-The mistake many teams make is assuming "monolith" automatically means "messy". This tutorial shows the opposite: the deployment unit can be singular while the code remains disciplined.
+The lesson is not that a monolith is automatically clean. The lesson is that a monolith can remain clean if boundaries are explicit and enforced.
 
 ### 2. Layering Is About Responsibility
 
 Focus on what each layer is responsible for:
 
-- Presentation handles HTTP and UI-facing concerns
-- Application coordinates workflows
+- Presentation handles HTTP, routes, sessions, and UI-facing concerns
+- Application should coordinate workflows
 - Domain enforces business rules
 - Infrastructure deals with technical implementation details
 
-If these responsibilities blur, the architecture degrades quickly.
+The current implementation partially simplifies this by keeping some orchestration in endpoint modules. That is useful to notice, because it helps learners distinguish architectural intent from current implementation maturity.
 
 ### 3. Choose Architecture Based On Current Reality
 
@@ -44,9 +45,9 @@ This system uses a layered monolith because:
 - the workflows are transactional
 - the domain is understandable and bounded
 - strong consistency matters
-- separate service deployment would add cost without immediate benefit
+- separate service deployment would add cost without current benefit
 
-This is the real architectural lesson: do not optimize for imagined scale before solving a current problem.
+This is the core lesson: do not optimize for imagined scale before solving a current problem.
 
 ### 4. Planning Matters Before Coding
 
@@ -62,21 +63,29 @@ A serious project definition also needs:
 - deployment assumptions
 - readiness gates
 
-Without those, implementation starts with hidden ambiguity.
+### 5. Identity And Authorization Shape The Architecture
+
+This tutorial now includes a practical auth layer.
+
+That matters because learners can see that:
+
+- write operations should use authenticated server-side identity
+- warehouse visibility rules affect both API filtering and UI behavior
+- authorization belongs to the system design, not only to a login screen
 
 ## Common Misunderstandings
 
 ### "Monolith" Means Poor Engineering
 
-Incorrect. A monolith is only the deployment model. Poor engineering comes from weak boundaries, not from being a single deployable unit.
+Incorrect. A monolith only describes the deployment model. Poor engineering comes from weak boundaries.
 
 ### Every Business Capability Needs Its Own Service
 
 Incorrect. Most internal systems do not benefit from service decomposition in their first versions.
 
-### Layered Architecture Means Business Logic Goes Everywhere
+### Layered Architecture Means The Application Layer Is Always Fully Realized Immediately
 
-Incorrect. Business logic should concentrate in the domain and application layers, not in controllers, UI components, or raw data access code.
+Incorrect. Teams often start with an incomplete application layer and refine it as complexity grows. This tutorial currently shows that transitional state.
 
 ### A Database Per Concern Is Always Better
 
@@ -84,15 +93,13 @@ Incorrect for this case. The inventory system benefits from a single source of t
 
 ## What This Tutorial Teaches Better Than A Toy Example
 
-The inventory scenario is intentionally concrete because it exposes real design issues:
+The inventory scenario is concrete enough to expose real design issues:
 
 - stock movements require transactional clarity
 - adjustments require approval rules
 - reports depend on trustworthy operational data
 - auditability matters
-- multiple user roles create authorization boundaries
-
-This makes the layered monolith decision easier to evaluate than with a generic CRUD demo.
+- multiple user roles create meaningful authorization boundaries
 
 ## Comparison Lens
 
@@ -100,7 +107,7 @@ This makes the layered monolith decision easier to evaluate than with a generic 
 
 - layered monolith focuses on layer separation
 - modular monolith adds stronger business-module boundaries
-- a layered monolith is often the earlier step
+- the most likely next step for this tutorial is better modularity, not service decomposition
 
 ### Layered Monolith Vs Microservices
 
@@ -111,7 +118,7 @@ This makes the layered monolith decision easier to evaluate than with a generic 
 ### Layered Monolith Vs Event-Driven Architecture
 
 - layered monolith handles the core transactional workflow directly
-- event-driven architecture becomes more valuable when many systems need to react asynchronously
+- event-driven architecture becomes more valuable when many systems need asynchronous reactions
 - this inventory example does not need that complexity for MVP
 
 ## Review Questions
@@ -119,22 +126,23 @@ This makes the layered monolith decision easier to evaluate than with a generic 
 - Why is this inventory system a better fit for a layered monolith than for microservices?
 - Which responsibilities belong in the application layer versus the domain layer?
 - Why is a single relational database appropriate here?
-- What business rules should never live in controllers?
+- Why should workflow actors come from the authenticated session rather than the request body?
 - What warning signs would justify evolving this design later?
 
 ## Practical Exercise
 
-A useful learning exercise is to take one workflow and map it through the layers.
+A useful learning exercise is to trace one workflow through the current implementation and compare it to the ideal layered design.
 
 Suggested workflow:
 
-1. stock receipt is submitted by a warehouse operator
-2. controller validates the request format
-3. application service coordinates the use case
-4. domain rules validate the product and quantity
-5. infrastructure persists the result in PostgreSQL
+1. a warehouse operator signs in
+2. the frontend submits a stock receipt request
+3. the endpoint validates auth, role, and warehouse assignment
+4. domain rules validate the operation
+5. infrastructure persists the workflow and inventory change
+6. the actor is recorded from the authenticated server-side identity
 
-If the learner can explain that path clearly, they understand the architecture more concretely.
+If the learner can explain both the current implementation path and the next refactor that would move orchestration into application services, they understand the tutorial well.
 
 ## Completion Check
 
@@ -142,5 +150,6 @@ The learner should consider this tutorial understood when they can:
 
 - describe the architecture without generic buzzwords
 - explain why this example fits the design
-- identify what is intentionally not implemented yet
-- explain the tradeoff between simplicity and future modularity
+- identify what is implemented already versus what remains future work
+- explain the tradeoff between tutorial simplicity and architectural purity
+- explain why authorization and warehouse scoping are part of the architecture itself

@@ -7,7 +7,7 @@ This tutorial uses an **inventory and warehouse management system** as the examp
 Concrete business scenario:
 
 - company: a mid-sized retail distributor
-- products: laptops, monitors, keyboards, office chairs, and networking gear
+- products: laptops, monitors, office chairs, and related equipment
 - warehouses: Brisbane, Sydney, and Melbourne
 - users: warehouse operators, purchasing officers, inventory planners, and operations managers
 
@@ -17,7 +17,8 @@ Primary capabilities:
 - warehouse management
 - stock receiving and adjustments
 - stock transfers
-- reporting dashboard
+- low-stock reporting
+- identity-driven authorization
 
 ## Product Goals
 
@@ -26,9 +27,9 @@ Primary capabilities:
 - make stock changes auditable
 - reduce avoidable stockouts by surfacing reorder risk early
 
-## MVP Scope
+## Current Implementation Status
 
-The first implementation should deliver:
+Implemented now in this repository:
 
 - product catalog CRUD
 - warehouse CRUD
@@ -36,15 +37,17 @@ The first implementation should deliver:
 - stock transfer workflow
 - stock adjustment workflow with approval threshold
 - low-stock reporting
+- login, logout, session retrieval, and protected routes
 - role-based access for the four primary user roles
+- warehouse assignment scoping for operators
 
-The first implementation should not deliver:
+Not yet implemented:
 
-- supplier self-service
-- purchase order management
-- shipment carrier integration
-- barcode hardware integration
-- predictive forecasting
+- backend integration tests for endpoint behavior and authorization
+- frontend automated tests
+- production packaging that serves built frontend assets from ASP.NET Core
+- richer reporting beyond the current low-stock and workflow views
+- strong application-layer use-case services beyond the current simple baseline
 
 ## Learning Focus
 
@@ -52,7 +55,7 @@ When reading this document, focus on:
 
 - how concrete workflows turn architecture into implementation scope
 - how user roles and acceptance criteria shape system behavior
-- how data model choices reflect business rules
+- how a tutorial implementation may intentionally simplify internal structure while preserving the architectural lessons
 
 ## Why This Example Fits
 
@@ -63,15 +66,20 @@ This domain is ideal for a layered monolith because it is:
 - consistency-sensitive
 - easy to understand without distributed infrastructure
 
-It also mirrors the kind of internal line-of-business software that teams commonly build first as a single application.
+## Stack
 
-## Suggested Stack
+Current implementation stack:
 
-- Frontend: React with React Router and TanStack Query
-- Backend: ASP.NET Core Web API
+- Frontend: React, React Router, Vite, direct `fetch`
+- Backend: ASP.NET Core minimal APIs
 - Data access: Entity Framework Core
 - Database: PostgreSQL
-- Auth: ASP.NET Core Identity for V1
+- Auth: ASP.NET Core Identity with cookie authentication
+
+Recommended future refinement:
+
+- move workflow orchestration into explicit application-layer services
+- optionally adopt a client-side data library later if frontend complexity grows
 
 ## Locked V1 Decisions
 
@@ -85,87 +93,68 @@ It also mirrors the kind of internal line-of-business software that teams common
 
 ## Non-Functional Requirements
 
-- response time target: common read operations under 500 ms in normal load
-- auditability: all stock-changing actions must record actor and timestamp
-- availability target: standard business-hours internal application availability
-- security: authenticated access only, role-based authorization on write operations
-- maintainability: code must follow clear layer boundaries and module ownership
+- common read operations should remain straightforward and low latency for internal usage
+- all stock-changing actions must record actor and timestamp
+- authenticated access only
+- maintainable code boundaries even inside a single deployment unit
+- simple local setup for teaching and experimentation
 
-## Suggested Backend Structure
+## Actual Backend Structure
 
 ```text
 src/
-  Web/
-    Controllers/
-    Contracts/
-    Middleware/
-    Program.cs
-  Application/
-    Products/
-    Warehouses/
-    Inventory/
-    Transfers/
-    Common/
-  Domain/
-    Products/
-    Warehouses/
-    Inventory/
-    Transfers/
-    Common/
-  Infrastructure/
-    Persistence/
-    Integrations/
-    Reporting/
+  backend/
+    SystemDesignTutorials.LayeredMonolith.Web/
+      Contracts/
+      Endpoints/
+      Program.cs
+    SystemDesignTutorials.LayeredMonolith.Application/
+      DependencyInjection/
+    SystemDesignTutorials.LayeredMonolith.Domain/
+      Entities/
+      Enums/
+    SystemDesignTutorials.LayeredMonolith.Infrastructure/
+      Identity/
+      Persistence/
+      Seeding/
 ```
 
-## Example Use Cases
+Important note:
 
-### Product And Inventory Management
-
-- create a new SKU such as `MON-27-4K`
-- update product dimensions, reorder threshold, and supplier code
-- receive a supplier delivery into the Brisbane warehouse
-- record a stock adjustment for damaged items found during a cycle count
-
-### Warehouse Operations
-
-- create and manage warehouse records for Brisbane, Sydney, and Melbourne
-- transfer stock from Sydney to Melbourne when Melbourne drops below threshold
-- approve or reject stock adjustments above the warehouse operator limit
-- view low-stock items that require replenishment or transfer
-
-### Reporting
-
-- stock on hand by warehouse
-- inventory movement by period
-- low-stock and reorder reports
-- adjustment history by approver
+- the project layout follows layered boundaries
+- the current implementation keeps most workflow orchestration in endpoint modules rather than dedicated application services
+- this is acceptable for the current tutorial stage, but it is not the cleanest long-term layering outcome
 
 ## Primary Screens
 
+Implemented now:
+
 - login page
-- dashboard with low-stock and recent-activity widgets
-- products list and product detail page
-- warehouses list and warehouse detail page
-- inventory view filtered by warehouse and product
+- dashboard with current role/session context
+- product management view
+- warehouse management view
+- inventory summary view
 - stock receipt form
-- stock transfer form
-- stock adjustment form and approval queue
-- reporting page for low-stock and movement summaries
+- stock transfer form and lifecycle actions
+- stock adjustment form and approval actions
+- low-stock reporting view
 
 ## Primary User Roles
 
-- `Warehouse Operator`: receives stock, performs counts, submits adjustments
-- `Inventory Planner`: reviews stock levels and creates transfers
-- `Purchasing Officer`: manages suppliers and incoming receipts
-- `Operations Manager`: approves large adjustments and oversees warehouse health
+- `WarehouseOperator`: receives stock, submits adjustments, dispatches and receives transfers for assigned warehouses
+- `InventoryPlanner`: reviews stock levels and creates or approves transfers
+- `PurchasingOfficer`: manages product replenishment-related data and can record receipts
+- `OperationsManager`: manages warehouses, approves adjustments, and can perform cross-warehouse operational overrides
 
 ## Authorization Rules
 
+Implemented now:
+
+- all `/api/*` endpoints except `/api/health` and `/api/auth/login` require authentication
 - warehouse operators can create receipts and adjustments only for assigned warehouses
-- warehouse operators can view inventory only for assigned warehouses
-- inventory planners can view all warehouses and create transfers between any active warehouses
-- purchasing officers can manage product replenishment fields and create receipts across all warehouses
+- warehouse operators can view inventory, receipts, transfers, and warehouse data only for assigned warehouses
+- inventory planners can view all warehouses and create or approve transfers
+- purchasing officers can manage product data and create receipts across warehouses
 - operations managers can view all warehouses, approve or reject pending adjustments, and cancel transfers before dispatch
 
 ## Transfer State Machine
@@ -203,20 +192,6 @@ State rules:
 - only `Approved` adjustments affect inventory balances
 - `Rejected` adjustments remain auditable and immutable
 
-## End-To-End Example Workflow
-
-1. A supplier delivers 250 units of `LAP-14-BLK` to the Brisbane warehouse.
-2. A warehouse operator records the receipt.
-3. Inventory for Brisbane is increased immediately.
-4. Sydney falls below its reorder threshold for the same product.
-5. An inventory planner creates a transfer of 60 units from Brisbane to Sydney.
-6. The application validates available stock and reserves 60 units in Brisbane.
-7. Brisbane warehouse staff dispatch the transfer, reducing Brisbane on-hand stock.
-8. Sydney warehouse staff receive the transfer, increasing Sydney on-hand stock.
-9. A later cycle count discovers 8 damaged units in Sydney.
-10. The operator submits an adjustment request.
-11. The system evaluates quantity and value thresholds to decide whether manager approval is required.
-
 ## Domain Model Outline
 
 ### Product
@@ -250,7 +225,6 @@ Key fields:
 - `quantityOnHand`
 - `quantityReserved`
 - `reorderThreshold`
-- `lastReceiptAt`
 - `updatedAt`
 
 ### StockTransfer
@@ -264,12 +238,12 @@ Key fields:
 - `quantity`
 - `status`
 - `requestedBy`
-- `approvedAt`
 - `approvedBy`
-- `dispatchedAt`
-- `receivedAt`
-- `cancelledAt`
+- `dispatchedBy`
+- `receivedBy`
+- `cancelledBy`
 - `reason`
+- `cancellationReason`
 - `createdAt`
 
 ### InventoryAdjustment
@@ -286,9 +260,11 @@ Key fields:
 - `submittedAt`
 - `approvedBy`
 - `approvedAt`
+- `rejectedBy`
 - `rejectedAt`
 - `notes`
 - `createdAt`
+- `requiresApproval`
 
 ### InventoryReceipt
 
@@ -302,74 +278,67 @@ Key fields:
 - `receivedBy`
 - `receivedAt`
 
-## Example API Surface
+### UserWarehouseAssignment
+
+Key fields:
+
+- `userId`
+- `warehouseId`
+- `assignedAt`
+
+## Current API Surface
 
 ```text
+GET    /api/health
+POST   /api/auth/login
+POST   /api/auth/logout
+GET    /api/auth/me
 GET    /api/products
 GET    /api/products/{id}
 POST   /api/products
 PUT    /api/products/{id}
-GET    /api/warehouses/{id}/inventory
+POST   /api/products/{id}/archive
+GET    /api/warehouses
+GET    /api/warehouses/{id}
+POST   /api/warehouses
+PUT    /api/warehouses/{id}
+POST   /api/warehouses/{id}/deactivate
+GET    /api/inventory/summary
+GET    /api/inventory/receipts
 POST   /api/inventory/receipts
+GET    /api/transfers
 POST   /api/transfers
 POST   /api/transfers/{id}/approve
 POST   /api/transfers/{id}/dispatch
 POST   /api/transfers/{id}/receive
 POST   /api/transfers/{id}/cancel
+GET    /api/adjustments
+GET    /api/adjustments/pending
 POST   /api/adjustments
 POST   /api/adjustments/{id}/approve
 POST   /api/adjustments/{id}/reject
 GET    /api/reports/low-stock
 ```
 
-Example payloads:
-
-```json
-POST /api/inventory/receipts
-{
-  "warehouseId": "brisbane",
-  "productSku": "LAP-14-BLK",
-  "quantity": 250,
-  "supplierReference": "PO-10428"
-}
-```
-
-```json
-POST /api/transfers
-{
-  "sourceWarehouseId": "brisbane",
-  "destinationWarehouseId": "sydney",
-  "productSku": "LAP-14-BLK",
-  "quantity": 60,
-  "reason": "Replenish low stock"
-}
-```
-
-Suggested additional endpoints:
-
-```text
-GET    /api/reports/movements
-GET    /api/adjustments/pending
-GET    /api/transfers/{id}
-PUT    /api/reorder-rules/{id}
-```
-
 ## Example Domain Rules
 
-- inventory cannot be reduced below available stock unless backorders are supported
-- a stock transfer must have both source and destination warehouses
-- an adjustment above a configured threshold requires approval
+- inventory cannot be reduced below available stock
+- a stock transfer must reference distinct source and destination warehouses
 - archived products cannot receive new stock transactions
-- each product can define a reorder threshold per warehouse
-- receiving and transfer operations must be auditable by user and timestamp
+- high-value adjustments require manager approval
 - cancelling a transfer after dispatch is not allowed in V1
 - warehouse operators cannot create transactions for unassigned warehouses
+- stock-changing actions are attributed from the authenticated identity, not from client-supplied actor fields
 
-## React Frontend Guidance
+## Frontend Structure Note
 
-The React app should be feature-oriented rather than page-folder-only.
+Current implementation:
 
-Suggested shape:
+- one main `App.tsx` orchestrates the tutorial console
+- route protection is handled with React Router
+- API calls use direct `fetch`
+
+Recommended future refinement:
 
 ```text
 frontend/
@@ -384,27 +353,11 @@ frontend/
     app/
 ```
 
-This keeps the frontend aligned with business capabilities and makes it easier to evolve later.
-
-Suggested route shape:
-
-```text
-/dashboard
-/products
-/products/:id
-/warehouses
-/warehouses/:id
-/inventory
-/receipts/new
-/transfers/new
-/adjustments
-/adjustments/pending
-/reports/low-stock
-```
+That feature-oriented shape is still a good next step if the frontend grows.
 
 ## Data Model Starting Point
 
-Core tables:
+Core tables in practice:
 
 - `products`
 - `warehouses`
@@ -412,81 +365,78 @@ Core tables:
 - `stock_transfers`
 - `inventory_adjustments`
 - `inventory_receipts`
-- `reorder_rules`
-- `users`
-
-Keep the schema relational and straightforward early on. This architecture benefits from strong consistency more than clever distribution.
-
-Recommended table additions:
-
+- `aspnetusers`
+- `aspnetroles`
 - `user_warehouse_assignments`
-- `audit_log`
 
-## Acceptance Criteria For MVP
+## Acceptance Criteria For Current Tutorial Baseline
 
-- a user can create and update products
-- a user can create and update warehouses
-- a warehouse operator can record incoming stock receipts
+- a signed-in user can create and update products when their role allows it
+- a signed-in user can create and update warehouses when their role allows it
+- a warehouse operator can record incoming stock receipts for assigned warehouses
 - an inventory planner can create a transfer and the system validates available stock
 - transfer creation reserves quantity at the source warehouse
 - transfer dispatch reduces source on-hand stock
 - transfer receipt increases destination on-hand stock
-- an operator can submit a stock adjustment
+- an operator can submit a stock adjustment for an assigned warehouse
 - an operations manager can approve or reject adjustments above threshold
 - operators cannot access warehouses outside their assignments
-- low-stock items can be filtered and viewed by warehouse
-- all stock-changing operations write audit metadata
+- low-stock items can be viewed from the dashboard
+- all stock-changing operations record audit metadata directly on the workflow entities
 
 ## Testing Strategy
 
-- unit tests for domain rules
-- application-layer tests for use-case flows
-- API integration tests for key endpoints
-- frontend component and page tests for critical user workflows
+Current coverage:
 
-Priority scenarios to test first:
+- domain-level tests for inventory, product, warehouse, transfer, and adjustment behavior
+- manual runtime verification for login, authorization, and warehouse scoping
 
-- receive stock updates quantity on hand
-- transfer creation reserves stock without reducing on-hand stock
-- transfer dispatch reduces source on-hand stock
-- transfer receipt increases destination on-hand stock
-- transfer fails when source stock is insufficient
-- high-value adjustment enters pending approval state
-- approval updates inventory and audit trail correctly
-- low-stock report reflects reorder thresholds accurately
+Recommended next coverage:
+
+- API integration tests for auth and authorization rules
+- API integration tests for transfer and adjustment workflows
+- frontend tests for login and core workflow screens
 
 ## What To Keep Simple
 
 - one main database
-- one deployable application
+- one deployable backend application
 - one shared auth model
-- one pipeline for build and deploy
+- one local Docker workflow
 
 ## What To Avoid Early
 
 - splitting services by entity too soon
-- adding messaging because it feels "enterprise"
-- overusing generic repositories where direct use-case-oriented data access is clearer
-- adding too many abstraction layers before the domain demands them
+- adding messaging because it feels enterprise
+- pretending the tutorial implementation is already production-hardened
+- adding abstraction layers that are not yet earning their keep
 
 ## Evolution Path
 
-If the system grows significantly, a good next step is usually a **modular monolith**, not microservices.
+The most likely next improvement is a cleaner modular monolith style inside the same deployment unit.
 
-Likely future module boundaries:
+Good next boundaries:
 
 - catalog
 - warehouse operations
 - inventory control
 - transfers and approvals
 - reporting
+- identity and access
 
-## Implementation Ready Baseline
+## Implementation Baseline Summary
 
-Use the following baseline without further architectural debate during V1 implementation:
+Use the current codebase as a practical tutorial implementation, not as a finished production template.
 
-- local identity and role management through ASP.NET Core Identity
-- supplier references only, with no supplier management module
-- reservation-based transfer workflow
-- threshold-based adjustment approval using the documented quantity and value rules
-- warehouse-level access restrictions enforced for operators
+It already demonstrates:
+
+- strong transactional workflows
+- clear role boundaries
+- warehouse-scoped authorization
+- a realistic React + ASP.NET Core stack
+
+It still needs:
+
+- deeper test coverage
+- production packaging refinement
+- cleaner use-case orchestration inside the application layer

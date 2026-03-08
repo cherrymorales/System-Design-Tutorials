@@ -6,16 +6,16 @@ The purpose of layering is to separate responsibilities, not to create ceremony.
 
 Each layer should have a clear reason to exist:
 
-- Presentation: HTTP endpoints, controllers, request validation, auth integration, DTO mapping
-- Application: use cases, orchestration, transactions, coordination of domain behavior
-- Domain: business rules, entities, value objects, invariants
-- Infrastructure: database access, file storage, email, external API clients
+- Presentation: HTTP endpoints, request validation, auth integration, DTO mapping, session handling
+- Application: use-case orchestration and transaction boundaries
+- Domain: business rules, entities, invariants, workflow state transitions
+- Infrastructure: database access, identity persistence, seeding, external integrations
 
 ## Reference Flow
 
 ```mermaid
 flowchart TD
-    UI["React Frontend"] --> API["ASP.NET Core Controllers"]
+    UI["React Frontend"] --> API["ASP.NET Core Minimal APIs"]
     API --> APP["Application Layer"]
     APP --> DOM["Domain Layer"]
     APP --> INF["Infrastructure Layer"]
@@ -42,75 +42,90 @@ Core operational flow:
 5. adjustments correct damaged, missing, or found inventory
 6. reports highlight low stock and operational exceptions
 
+## Current Implementation Reality
+
+The repository structure follows the layered model, but the current tutorial implementation is intentionally simplified.
+
+Implemented now:
+
+- separate `Web`, `Application`, `Domain`, and `Infrastructure` projects
+- domain entities holding core business rules and workflow transitions
+- infrastructure handling EF Core persistence, Identity, and seeding
+- presentation layer handling auth, validation, response mapping, and most current orchestration
+
+Not yet fully realized:
+
+- a rich application layer with explicit commands, queries, and use-case services
+
+That means the tutorial is architecturally aligned, but not yet a fully mature layered implementation.
+
 ## Learning Focus
 
 When reading this document, focus on:
 
 - how one deployable application can still have clear internal separation
 - how dependency direction protects business logic
-- how transactional workflows influence architecture choices
+- where the current implementation is clean enough for learning and where it is intentionally simplified
 
 ## Layer Responsibilities
 
 ### Presentation Layer
 
-This layer handles input and output. It should know about HTTP, cookies, JWTs, JSON payloads, and response formatting.
+This layer handles input and output. It knows about HTTP, cookies, JSON payloads, and response formatting.
 
-It should not contain business rules such as stock allocation logic, reorder rules, or transfer approval validation.
+Current implementation examples:
 
-Examples:
-
-- product search API
-- warehouse stock summary API
 - login and session endpoints
-- input validation for create or update requests
-- mapping domain results into API response models
+- product, warehouse, inventory, transfer, and adjustment endpoints
+- request contract validation
+- authorization checks and warehouse scope filtering
+- response mapping to API models
 
 ### Application Layer
 
-This layer contains use cases. It coordinates work across the domain model and infrastructure abstractions.
+This layer should contain explicit use cases and orchestration.
 
-Examples:
+Current implementation status:
 
-- receive 250 units of `LAP-14-BLK` into the Brisbane warehouse
-- transfer 40 office chairs from Sydney to Melbourne
-- approve a damaged-stock write-off above manager threshold
-- reserve inventory for an approved sales order
+- the `Application` project exists
+- it currently provides only dependency wiring
+- most orchestration still lives in the endpoint modules
 
-This layer is often the best place for transaction boundaries and workflow orchestration.
+This is the main architectural gap between the intended design and the current tutorial implementation.
 
 ### Domain Layer
 
 This is where the business meaning lives.
 
-Examples:
+Current implementation examples:
 
 - `Product`
 - `Warehouse`
 - `InventoryItem`
 - `StockTransfer`
-- `StockAdjustment`
+- `InventoryAdjustment`
+- `InventoryReceipt`
+- `UserWarehouseAssignment`
 
-The domain layer should protect business invariants such as:
+The domain layer protects business invariants such as:
 
-- inventory cannot go below zero unless backorders are explicitly supported
-- stock transfers must reference valid source and destination warehouses
-- approved adjustments must include an auditable reason
-- high-value adjustments must be approved by a manager role
+- inventory cannot reserve or dispatch more stock than is available
+- source and destination warehouses in a transfer must be different
+- transfer state transitions are validated explicitly
+- adjustment approval thresholds are evaluated consistently
+- cancelling after dispatch is not allowed
 
 ### Infrastructure Layer
 
 This layer handles technical details.
 
-Examples:
+Current implementation examples:
 
-- Entity Framework Core repositories
+- Entity Framework Core `DbContext`
 - PostgreSQL persistence
-- email sender
-- file storage
-- background job adapters
-
-Infrastructure should support the domain and application layers rather than drive them.
+- ASP.NET Core Identity persistence
+- startup seeding for users, roles, warehouses, products, and inventory
+- warehouse assignment persistence
 
 ## Recommended Project Shape
 
@@ -122,27 +137,23 @@ src/
   Infrastructure/
 ```
 
-Possible role of each project:
-
-- `Web`: ASP.NET Core host, controllers, authentication, SPA static-file hosting
-- `Application`: commands, queries, DTOs, services, interfaces
-- `Domain`: entities, value objects, domain services, business rules
-- `Infrastructure`: EF Core, repositories, migrations, external integrations
+That shape is already present in the repository.
 
 ## Internal Module Boundaries
 
-Even inside a layered monolith, business areas should be separated.
+Recommended internal business modules:
 
-Recommended internal modules:
+- `Catalog`
+- `Warehouses`
+- `Inventory`
+- `Transfers`
+- `Reporting`
+- `Identity`
 
-- `Catalog`: products, SKUs, supplier references, reorder settings
-- `Warehouses`: warehouse metadata, location status, operating rules
-- `Inventory`: on-hand quantities, receipts, adjustments, audit trail
-- `Transfers`: stock movement between warehouses, transfer lifecycle
-- `Reporting`: dashboards, low-stock views, movement summaries
-- `Identity`: users, roles, permissions, session context
+Current implementation status:
 
-This keeps the application easier to evolve into a modular monolith later if needed.
+- these concerns are visible in the endpoint and domain structure
+- they are not yet separated into fully explicit application modules
 
 ## Dependency Direction
 
@@ -153,96 +164,80 @@ Keep dependencies flowing inward:
 - `Infrastructure` depends on `Application` and `Domain`
 - `Domain` depends on nothing application-specific
 
-This keeps business logic stable even if delivery or infrastructure details change.
+The current project references follow this model, even though the application layer is still thin.
 
 ## Concrete Request Flows
 
 ### Receive Stock
 
-1. React form submits a stock receipt request.
-2. Controller validates request shape and user identity.
-3. Application service loads product and warehouse context.
-4. Domain rules verify the product is active and quantity is valid.
-5. Infrastructure persists receipt and updates inventory balances in one transaction.
-6. Reporting views reflect the updated stock level.
+1. React submits a stock receipt request.
+2. The endpoint validates authentication, role, and warehouse access.
+3. Product and warehouse state are loaded from persistence.
+4. Domain rules validate the product and quantity.
+5. The inventory item is updated and the receipt is stored.
+6. The actor is recorded from the authenticated session.
 
 ### Transfer Stock
 
-1. Inventory planner requests a transfer from Brisbane to Sydney.
-2. Application layer checks current available stock.
-3. Domain layer verifies source and destination warehouses are valid and distinct.
-4. Transfer record is created and source inventory is reserved immediately.
-5. Dispatch later reduces source `quantityOnHand` and clears the reservation.
-6. Receipt at destination increases destination `quantityOnHand`.
-7. Audit trail is written with user, timestamp, and reason at each step.
+1. A planner or manager requests a transfer.
+2. The endpoint validates stock and warehouse state.
+3. The source inventory record reserves stock immediately.
+4. The transfer remains `Requested` until approval.
+5. Dispatch reduces source on-hand stock.
+6. Receipt increases destination on-hand stock.
+7. Each transition records actor and timestamp.
 
 ### Adjust Stock
 
-1. Warehouse operator submits an adjustment after a cycle count.
-2. Domain rules determine whether approval is required.
-3. Small adjustments may be auto-approved.
-4. Large or high-value adjustments remain pending for an operations manager.
-5. Once approved, inventory balance changes are committed.
+1. An operator or manager submits an adjustment.
+2. Warehouse access is validated.
+3. Domain rules evaluate whether approval is required.
+4. Small adjustments are auto-approved.
+5. Large or high-value adjustments remain pending for manager review.
+6. Inventory changes are applied only when the adjustment becomes `Approved`.
 
 ## Authorization Model
 
-Suggested permission boundaries:
+Current permission boundaries:
 
-- warehouse operator: create receipts, submit adjustments, view local stock
-- inventory planner: create transfers, view stock across warehouses, review low-stock reports
-- purchasing officer: manage supplier-related receipt data and product replenishment settings
-- operations manager: approve high-value adjustments, view all warehouse activity, override exceptional operations
+- warehouse operator: receipts, adjustments, dispatch, and receive for assigned warehouses only
+- inventory planner: create and approve transfers across all warehouses
+- purchasing officer: manage product data and create receipts
+- operations manager: manage warehouses, approve or reject adjustments, cancel transfers, and perform cross-warehouse operations
 
-Controllers should enforce authentication, but business-sensitive authorization should still be validated in the application layer for critical actions.
+Important implementation note:
 
-Locked V1 access rules:
-
-- warehouse operators are restricted to explicitly assigned warehouses
-- inventory planners, purchasing officers, and operations managers can view all warehouses
-- only operations managers can approve or reject pending adjustments
-- only transfers not yet dispatched can be cancelled
+- authorization is enforced directly in the endpoint layer today
+- warehouse scope filtering is applied from persisted assignments
+- workflow actor identity comes from the signed-in session, not the client payload
 
 ## Data Consistency Strategy
 
-Because this is a layered monolith, the default consistency model should be strong consistency inside a single relational transaction.
+This tutorial uses strong consistency inside one relational database.
 
-Recommended rules:
+Current rules:
 
-- update inventory and write audit records in the same transaction
-- avoid eventual consistency unless a later requirement demands it
-- keep a single source of truth for on-hand stock
-- model approval state explicitly rather than inferring it from side effects
-- persist transfer reservations and stock movements as explicit state changes
+- inventory updates and workflow state changes are committed together
+- transfer reservations and stock movements are explicit state changes
+- approval state is persisted, not inferred
+- the same database remains the source of truth for inventory balances and workflow records
 
 ## Error Handling Strategy
 
 Expected categories:
 
 - validation errors: malformed requests, missing required fields
-- business rule errors: insufficient stock, invalid transfer, approval required
-- authorization errors: user lacks required permission
-- system errors: database unavailability, unexpected exceptions
+- business rule errors: insufficient stock, invalid transition, archived product usage
+- authorization errors: user lacks required role or warehouse access
+- system errors: database unavailability or unexpected exceptions
 
-API responses should distinguish these clearly so the frontend can present actionable messages.
-
-Important business error cases for V1:
-
-- transfer requested for inactive warehouse
-- transfer quantity exceeds available stock
-- adjustment submitted for unassigned warehouse
-- approval attempted by non-manager role
+The current API distinguishes these with `400`/validation responses, `401`, `403`, `404`, and `409` where appropriate.
 
 ## Background Processing
 
-This system does not require a distributed event architecture for MVP.
+The current tutorial implementation does not use background workers or messaging.
 
-Reasonable background jobs inside the monolith:
-
-- nightly low-stock snapshot refresh
-- scheduled inventory health reports
-- cleanup of expired sessions or temporary files
-
-These jobs can run in-process or as a companion worker hosted inside the same application deployment if needed.
+That is appropriate for the current scope because the workflows are synchronous and transactional.
 
 ## Architecture Decision Rules
 
@@ -251,35 +246,26 @@ Before adding a new technical pattern, ask:
 1. does it solve a real current problem
 2. can it stay inside the monolith first
 3. does it preserve transactional clarity
-4. does it reduce or increase operational burden
-
-If the answer weakens simplicity without solving an actual constraint, it should be rejected for the first implementation.
+4. is it worth the operational cost for this tutorial
 
 ## Common Mistakes
 
-- putting business rules directly in controllers
-- letting EF Core entities become the entire domain model
-- letting UI needs drive database schema without domain thinking
-- adding a repository for every table without a use-case focus
-- calling infrastructure code directly from the domain layer
+- putting business rules directly in controllers or endpoints
+- letting the current simplified endpoint orchestration become the permanent architecture
+- adding abstractions that are not yet needed
+- confusing tutorial-local convenience with production architecture guidance
 
 ## Practical Boundary Rules
 
-- Controllers should be thin.
-- Application services should coordinate, not become giant "god services".
+- Endpoints should stay thin over time.
+- Application services should own orchestration as complexity grows.
 - Domain objects should enforce important rules.
-- Infrastructure should be replaceable without rewriting business decisions.
+- Infrastructure should remain a support layer, not the driver of business decisions.
 
 ## When To Evolve Beyond This
 
-Move toward a modular monolith when:
+Good next evolution steps:
 
-- teams begin owning separate business areas
-- unrelated features keep colliding in the same code paths
-- module boundaries matter more than simple layering
-
-Move toward microservices only when:
-
-- independent deployment becomes a real operational need
-- scaling differences are persistent and meaningful
-- the team can support observability, messaging, and distributed debugging
+- move workflow orchestration into application services
+- split the monolith into stronger internal modules
+- only consider microservices if independent deployment and scaling become real operational needs

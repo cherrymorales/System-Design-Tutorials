@@ -4,188 +4,194 @@
 
 The layered monolith should stay operationally simple.
 
-For this tutorial, the preferred deployment model is:
+This tutorial currently optimizes for a clean local learning workflow first, while still documenting a sensible production direction.
 
-- one container for the ASP.NET Core application
-- React built into static assets and served by the same application
-- database hosted separately in production
+## Current Tutorial Runtime
 
-Implementation should not begin until the deployment model is accepted, because deployment assumptions influence project structure, configuration, and operational risk.
+What is implemented now in this repository:
 
-## Why Single Container Works Well Here
+- React runs as a Vite dev server during development
+- ASP.NET Core runs as a separate backend process or container
+- PostgreSQL runs as a separate local container
+- Docker Compose starts the API and database for local use
+- the local database is recreated and seeded from the model for a clean tutorial environment
 
-- there is only one deployable application
-- request handling is synchronous and local to the process
-- operational overhead stays low
-- debugging and rollback are simpler than in a multi-service setup
+Important implication:
 
-## Learning Focus
+- the current implementation is not yet packaged as a single app container serving the built SPA
+- the current local workflow does not use EF Core migrations
 
-When reading this document, focus on:
+## Why This Is Acceptable For The Tutorial
 
-- why deployment simplicity is a valid design goal
-- how environment strategy affects project structure
-- why a monolith can still need serious operational planning
+For learning, this keeps iteration simple:
+
+- frontend and backend can be worked on independently
+- the database state is predictable on each fresh container start
+- the user can focus on architecture and workflow behavior instead of deployment complexity
 
 ## Recommended Production Shape
+
+Recommended future production-oriented shape:
 
 ```text
 [ React static files + ASP.NET Core app ] -> single container
 [ PostgreSQL ] -> managed database service
 ```
 
-This keeps the application deployment simple while avoiding data loss risks that come from bundling the database into the app container.
+This remains the preferred long-term direction for this architecture.
+
+## Learning Focus
+
+When reading this document, focus on:
+
+- the difference between the current tutorial runtime and the recommended production shape
+- why a monolith can still benefit from simple deployment packaging
+- why local-learning shortcuts should be documented explicitly instead of being treated as production defaults
 
 ## Environment Strategy
 
-Recommended environments:
+Current environments effectively supported by the tutorial:
 
-- `local`: developer machine with app container and PostgreSQL container
-- `dev`: shared integration environment for ongoing feature work
+- `local`: fully supported
+- `dev/test/prod`: documented as future direction, not fully packaged in the repository yet
+
+Recommended non-local environments for future work:
+
+- `dev`: shared integration environment
 - `test`: pre-release validation environment
-- `prod`: internal production environment for business users
-
-Each environment should use the same deployment shape, with differences limited to configuration, scale, and managed services.
+- `prod`: internal production environment
 
 ## Local Development Shape
 
-For local development, two containers are perfectly reasonable:
+Current local setup:
 
-- app container
-- PostgreSQL container
-
-This still preserves the layered monolith design because the application remains a single deployable unit.
-
-Suggested local setup:
-
-- one Dockerfile for the ASP.NET Core host plus built React assets
+- one API container
 - one PostgreSQL container
-- seed data for products, warehouses, and example inventory
+- one Vite dev server for the frontend
+
+This still preserves the layered monolith design because the application remains one backend deployment unit with one database.
 
 ## Container Notes
 
-Recommended approach:
+Current container responsibilities:
 
-- build React during the application build pipeline
-- copy the built frontend assets into the ASP.NET Core host
-- expose one HTTP port
-- keep environment-specific settings outside the image
+- API container hosts the ASP.NET Core backend
+- DB container hosts PostgreSQL
+- frontend is run separately in development
 
-Suggested image responsibilities:
+Recommended future image responsibilities:
 
 - host the API
-- serve the React SPA
+- serve the built React SPA
 - expose health endpoints
 - emit structured logs to stdout
 
 ## Environment Configuration
 
-Typical configuration values:
+Current configuration concerns:
 
 - database connection string
 - ASP.NET Core Identity settings
-- logging level
-- allowed origins if frontend and backend are separated in development
-- approval threshold configuration for inventory adjustments
-- warehouse assignment seeding for local and test environments
-- feature flags for incomplete modules
+- API and frontend development ports
+- approval threshold configuration in code and domain rules
+- warehouse assignment seeding for local users
 
 Secrets should never be stored in source control.
 
 ## Observability
 
-Even a monolith should be observable.
+Current baseline:
 
-Recommended minimum:
+- health endpoints exist
+- runtime verification is possible through Docker and API checks
+
+Still recommended:
 
 - structured application logs
 - request tracing
 - error tracking
-- health check endpoint
-
-Recommended domain-focused telemetry:
-
-- count of stock adjustments created
-- count of pending approvals
-- transfer failures caused by insufficient stock
-- low-stock report generation duration
-- per-endpoint response times
+- domain-focused metrics for transfer failures, pending approvals, and low-stock generation
 
 ## Security And Access
 
-Minimum operational controls:
+Current operational baseline:
 
-- authenticated access only
+- authenticated access for protected API routes
 - role-based authorization on write operations
-- audit logging for inventory-changing actions
-- HTTPS in all non-local environments
-- database backups enabled for production
-
-V1 security baseline:
-
-- use ASP.NET Core Identity for local user and role management
-- seed initial roles for `WarehouseOperator`, `InventoryPlanner`, `PurchasingOfficer`, and `OperationsManager`
-- seed at least one assigned warehouse user for local testing
+- operator warehouse scoping
+- audit metadata recorded on inventory-changing workflow entities
+- seeded local users and roles for tutorial testing
 
 ## CI/CD Expectations
 
-A reasonable pipeline for this architecture:
+Current verified pipeline steps:
 
 1. run backend tests
-2. run frontend tests
-3. build React assets
-4. build the ASP.NET Core application
-5. create container image
-6. deploy application
+2. build frontend assets
+3. build API container
+4. run Docker Compose locally
 
-Release gates before production:
+Recommended future release gates:
 
-1. automated tests pass
-2. database migrations are validated
-3. smoke tests pass in test environment
-4. low-stock reporting and adjustment approval flows are verified
-5. rollback plan is ready
-6. transfer reservation, dispatch, and receipt flows are verified end-to-end
+1. backend integration tests pass
+2. frontend tests pass
+3. built SPA is packaged with the backend
+4. smoke tests pass in a non-local environment
+5. data-evolution strategy is defined beyond the current clean-local-db workflow
 
-## Database Migration Strategy
+## Data Evolution Strategy
 
-- keep schema changes in version-controlled migrations
-- apply migrations in a controlled deployment step
-- avoid manual production schema edits
-- ensure new migrations are backward-compatible when possible
+Current tutorial strategy:
+
+- use `EnsureCreated` against a clean recreated local database
+- avoid EF Core migrations for the local teaching workflow
+- rely on seeding to create a known starting state
+
+Recommended future production strategy:
+
+- introduce version-controlled migrations
+- apply schema changes in a controlled deployment step
+- stop using destructive recreation outside local learning scenarios
 
 ## Backup And Recovery
 
-Minimum recovery plan:
+Current tutorial implementation does not provide production backup logic.
+
+Recommended production baseline:
 
 - scheduled PostgreSQL backups
-- restore procedure documented and tested
-- recovery point objective aligned with business tolerance for inventory data loss
-- recovery steps for failed application deployment
+- documented restore procedure
+- recovery expectations aligned with inventory data criticality
 
 ## Operational Risks
 
-- schema changes that break inventory balances
-- missing audit records for stock-changing operations
-- accidental over-coupling between catalog, inventory, and reporting code
-- configuration drift across environments
+Current risks:
 
-## Readiness Checklist
+- local database recreation is destructive by design
+- frontend and backend are not yet packaged into one production-style app container
+- deployment guidance can be misread as production-ready if the tutorial/runtime distinction is not explicit
 
-Before implementation starts, confirm:
+## Readiness Status
 
-- environment list is agreed
-- container strategy is agreed
-- auth approach is agreed
-- logging and monitoring requirements are agreed
-- backup expectations are agreed
-- release gates are agreed
+Current status:
+
+- local tutorial runtime is ready and verified
+- production deployment shape is only partially implemented
+
+## Recommended Next Deployment Step
+
+When the tutorial moves beyond the current learning baseline, the next deployment improvement should be:
+
+- build the React frontend into static assets
+- serve those assets from ASP.NET Core
+- keep PostgreSQL separate
+- revisit data evolution with migrations for non-local environments
 
 ## Warning Signs The Deployment Model Is Breaking Down
 
-- deployments become slow because unrelated changes always ship together
+- the backend and frontend require different release cadences in practice
 - startup time grows significantly
-- one feature area needs very different scaling
-- incidents are hard to isolate because the application has become too entangled
+- one capability needs materially different scaling
+- local convenience assumptions leak into production expectations
 
-When that happens, the next step is usually better internal modularity before service decomposition.
+If that happens, improve modularity first before considering service decomposition.

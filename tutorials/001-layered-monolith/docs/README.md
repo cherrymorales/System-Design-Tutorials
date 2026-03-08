@@ -2,49 +2,48 @@
 
 ## Overview
 
-A layered monolith is a single deployable application that separates responsibilities into logical layers such as presentation, application, domain, and infrastructure.
+A layered monolith is a single deployable application with clear internal boundaries between presentation, application, domain, and infrastructure concerns.
 
-It is still one application, one codebase, and usually one database, but the internal structure is disciplined enough to keep the system understandable as it grows.
-
-For this tutorial, the architecture is applied to a specific internal product so the design can be understood as a practical project rather than as a vague pattern.
+For this tutorial, the architecture is applied to a concrete internal system: an inventory and warehouse management platform for a mid-sized retail distributor operating warehouses in Brisbane, Sydney, and Melbourne.
 
 ## Why This Tutorial Matters
 
-Layered monoliths remain one of the most common production architectures in the industry because they are fast to build, cheaper to operate than distributed systems, and often the best starting point for products that still need to learn from real users.
+This architecture remains common in industry because it usually gives teams the fastest path to a maintainable product without the operational burden of distributed systems.
 
-For many teams, the right first architecture is not microservices. It is a well-structured monolith with clear boundaries.
+For many business systems, the right first architecture is a disciplined monolith, not microservices.
 
 ## Best Used When
 
-- the product is early or mid-stage and priorities may still shift
+- the product is early or mid-stage and requirements are still evolving
 - the team is small to medium-sized
-- the domain is business-oriented and mostly transactional
-- release speed matters more than service-level independence
+- the domain is transactional and consistency-sensitive
 - operational simplicity is a priority
+- one deployment cadence is acceptable
 
 ## Not Ideal When
 
-- different parts of the platform must scale independently right now
-- many teams need separate deployments on different cadences
-- the domain is so broad that a single deployment unit creates coordination bottlenecks
-- the codebase already suffers from severe coupling and lack of ownership
+- separate domains require independent deployment immediately
+- different subsystems must scale independently right now
+- many teams need strict ownership isolation
+- the codebase is already too entangled for simple layering to be sufficient
 
 ## Recommended Technology
+
+Recommended tutorial baseline:
 
 - Frontend: React
 - Backend: ASP.NET Core
 - Database: PostgreSQL or SQL Server
 - ORM: Entity Framework Core
-- Hosting: single application container in production when practical
+- Hosting: one application deployment unit where practical
 
-## Single-Container Guidance
+Current implementation in this repository:
 
-This is one of the best architectures for single-container deployment. A common modern approach is:
-
-- build the React frontend into static assets
-- serve those assets from the ASP.NET Core application
-- run the web application as one container
-- run the database separately in managed infrastructure or a second container for local development
+- Frontend: React + React Router + Vite
+- Backend: ASP.NET Core minimal APIs
+- Database: PostgreSQL
+- Auth: ASP.NET Core Identity with cookie authentication
+- Data access: Entity Framework Core
 
 ## Example Project
 
@@ -55,22 +54,16 @@ Concrete scenario:
 - the business sells electronics and home-office equipment
 - it operates three warehouses in Brisbane, Sydney, and Melbourne
 - warehouse staff receive stock from suppliers
+- inventory planners create transfers between warehouses
 - operations managers approve large stock adjustments
-- inventory planners transfer stock between warehouses to prevent stockouts
+- purchasing officers manage replenishment-related product data
 
 Business objective:
 
 - maintain accurate stock visibility across all warehouses
-- reduce manual spreadsheet-based inventory tracking
+- reduce spreadsheet-based tracking
 - prevent stockouts on high-demand items
 - make stock movements and write-offs auditable
-
-Why this is a strong example:
-
-- it has clear business workflows
-- it is mostly CRUD plus inventory rules, approvals, and reporting
-- it benefits from strong consistency
-- it usually does not need independent service scaling at the start
 
 ## Project Scope
 
@@ -81,10 +74,10 @@ Why this is a strong example:
 - stock receipts from suppliers
 - stock transfers between warehouses
 - stock adjustments with approval rules
-- low-stock reporting and reorder visibility
-- user roles for operational staff and managers
+- low-stock reporting and warehouse visibility
+- role-based access for internal users
 
-### Out Of Scope For The First Implementation
+### Out Of Scope For The Current Tutorial Implementation
 
 - supplier portal access
 - barcode-scanner device integrations
@@ -92,19 +85,29 @@ Why this is a strong example:
 - public e-commerce storefront
 - advanced forecasting and machine learning
 - multi-tenant SaaS support
+- backend integration test coverage beyond current domain tests
+- frontend automated test coverage
 
-## Delivery Position
+## Implementation Status
 
-This tutorial is being documented to project-plan level before implementation starts.
+This tutorial is no longer only a planning package. It now includes a working implementation through Phase 4.
 
-This document set is now intended to be implementation-ready for V1.
+Implemented now:
 
-Implementation should use the finalized baseline in the supporting documents, especially:
+- solution and project structure for React + ASP.NET Core + PostgreSQL
+- seeded startup data for products, warehouses, inventory, roles, and users
+- product and warehouse CRUD
+- receipt, transfer, and adjustment workflows
+- low-stock reporting
+- login, session handling, role-based authorization, and operator warehouse scoping
+- local Docker runtime for API and database
 
-- locked V1 decisions in [Project Plan](./project-plan.md)
-- workflow and state definitions in [Implementation Blueprint](./implementation-blueprint.md)
-- authorization and transaction rules in [Architecture Guide](./architecture.md)
-- environment and release requirements in [Deployment Guide](./deployment.md)
+Still recommended as future work:
+
+- stronger application-layer orchestration instead of endpoint-heavy workflow handling
+- backend integration tests for authorization and endpoint flows
+- frontend automated tests
+- production packaging that serves the built SPA from ASP.NET Core in a single app container
 
 ## Tutorial Contents
 
@@ -116,46 +119,35 @@ Implementation should use the finalized baseline in the supporting documents, es
 
 ## Intended Audience
 
-- developers who need a concrete layered monolith reference
-- technical leads deciding whether a monolith is sufficient
-- stakeholders reviewing scope before build starts
-- future contributors who need a shared project definition
+- developers learning when a layered monolith is the right choice
+- technical leads evaluating whether a monolith is sufficient for a business system
+- contributors who need both the design intent and the current implementation status
 
 ## What You Should Learn From This Tutorial
 
 By the end of this tutorial, a developer should understand:
 
-- how to structure a layered monolith cleanly
-- how to model a real warehouse workflow without unnecessary service decomposition
-- where to place business logic and where not to place it
-- how React and ASP.NET Core fit together in this design
-- when a single container is enough
-- what warning signs suggest the system should evolve into a modular monolith or services later
-
-They should also be able to explain:
-
 - why a layered monolith is often a better first architecture than microservices
-- which responsibilities belong in presentation, application, domain, and infrastructure
-- what kinds of business systems naturally fit this architecture
+- how to structure a transactional business system with clear boundaries
+- where business rules should live and where they should not
+- how authorization and warehouse scoping affect both API design and UI behavior
+- where this implementation is intentionally simplified and what a next refactor would improve
 
-## Definition Of Complete Documentation
+## Definition Of Documentation Accuracy
 
-This tutorial should be considered documentation-complete when a developer can answer all of the following without guessing:
+This tutorial documentation is accurate when a reader can answer all of the following without guessing:
 
 - what business problem the system solves
-- who the users are
-- which workflows exist in the MVP
-- what modules the application contains
-- what data the system stores
-- how the application is deployed
-- how success will be measured
-- what risks and non-goals are explicitly accepted
-- what exact baseline decisions implementation should follow
+- what the intended architecture is
+- what is already implemented in this repository
+- what is still only recommended or future work
+- what runtime and deployment assumptions are actually being used
+- what tradeoffs the current implementation is making for tutorial simplicity
 
 ## Tradeoffs
 
-- simple to build and operate
-- easier local development than distributed systems
-- easier debugging because most requests stay inside one process
-- can degrade into a "big ball of mud" if boundaries are not enforced
-- scaling usually happens for the whole application, not for isolated capabilities
+- fast to build and operate compared with distributed systems
+- easier local development and debugging because most work stays in one process
+- strong consistency is straightforward with one relational database
+- can degrade into a tightly coupled codebase if boundaries are not enforced
+- current implementation keeps some orchestration in endpoint modules for simplicity, which is practical for a tutorial but not the cleanest long-term layering
