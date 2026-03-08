@@ -23,6 +23,12 @@ public sealed class Warehouse
     public string City { get; private set; } = string.Empty;
     public WarehouseStatus Status { get; private set; }
 
+    public void UpdateDetails(string name, string city)
+    {
+        Name = name;
+        City = city;
+    }
+
     public void Deactivate()
     {
         Status = WarehouseStatus.Inactive;
