@@ -48,13 +48,28 @@ Technology choices should stay flexible. Each tutorial may recommend a better st
 
 Each system design tutorial should live in its own folder under `tutorials/`.
 
+Folders should use a numeric prefix so they remain sorted in the intended learning order.
+
 Recommended structure:
 
 ```text
 tutorials/
-  system-design-name/
+  001-system-design-name/
     README.md
+    learning-guide.md
+    project-plan.md
+    architecture.md
+    implementation-blueprint.md
+    deployment.md
 ```
+
+Current planned order:
+
+1. `001-layered-monolith`
+2. `002-modular-monolith`
+3. `003-client-server-spa-api`
+4. `004-microservices`
+5. `005-event-driven-architecture`
 
 Each tutorial document should cover:
 
@@ -66,6 +81,11 @@ Each tutorial document should cover:
 - Recommended technology stack
 - Deployment approach
 - Example project idea
+- Learning objectives and teaching notes
+
+The `README.md` should act as the entry point, while supporting documents can go deeper into architecture, implementation, and deployment.
+The `learning-guide.md` should explain what the reader is supposed to learn, what concepts to focus on, common misunderstandings, and review questions.
+The `project-plan.md` should define scope, phases, risks, and readiness gates before implementation begins.
 
 ## How This Context Document Should Be Used
 
@@ -87,3 +107,4 @@ This project is successful if a developer can open the repository, pick a tutori
 - what stack is suitable
 - how it might be deployed
 - what kind of product it is good for
+- what they are supposed to learn from studying it
