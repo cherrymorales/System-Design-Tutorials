@@ -7,9 +7,9 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
-    volumes:
-      - layered_monolith_db:/var/lib/postgresql/data
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
 
   api:
     build:
@@ -22,7 +22,4 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=layered_monolith;Username=postgres;Password=postgres
     ports:
-      - "8080:8080"
-
-volumes:
-  layered_monolith_db:
+      - "8081:8080"

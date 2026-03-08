@@ -13,6 +13,7 @@ Included now:
 - PostgreSQL-backed infrastructure baseline
 - Docker support for the API and database
 - first domain test for inventory reservation behavior
+- automatic schema creation on application startup for clean local databases
 
 ## Structure
 
@@ -52,7 +53,7 @@ npm install
 npm run dev
 ```
 
-The Vite dev server proxies `/api` requests to `http://localhost:8080`.
+The Vite dev server runs on `http://localhost:5174` and proxies `/api` requests to `http://localhost:8081`.
 
 ### Docker Compose
 
@@ -63,12 +64,18 @@ docker compose up --build
 
 This starts:
 
-- PostgreSQL on `localhost:5432`
-- API on `localhost:8080`
+- PostgreSQL on `localhost:5433`
+- API on `localhost:8081`
+
+The database container is intentionally ephemeral:
+
+- no persistent Docker volume is used
+- schema is created automatically with `EnsureCreated`
+- each fresh container starts from an empty database state
+- this local workflow does not use EF Core migrations
 
 ## Next Implementation Targets
 
-- add EF Core migrations
 - seed roles and baseline users
 - implement products and warehouses CRUD
 - add transfer and adjustment workflows
