@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseAppHost>false</UseAppHost>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\src\backend\SystemDesignTutorials.ModularMonolith.Application\SystemDesignTutorials.ModularMonolith.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\SystemDesignTutorials.ModularMonolith.Domain\SystemDesignTutorials.ModularMonolith.Domain.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\SystemDesignTutorials.ModularMonolith.Infrastructure\SystemDesignTutorials.ModularMonolith.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\backend\SystemDesignTutorials.ModularMonolith.Web\SystemDesignTutorials.ModularMonolith.Web.csproj" />
+  </ItemGroup>
+
+</Project>
+
+
+
+

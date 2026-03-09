@@ -1,24 +1,87 @@
 # Implementation
 
-This folder is reserved for the buildable `002-modular-monolith` example implementation.
+This folder contains the buildable `002-modular-monolith` example implementation.
 
-Implementation has not started yet.
+Implemented phases:
 
-Planned baseline for the future build:
+- Phase 1: backend, frontend, Docker, seeded Identity users, and clean local database setup
+- Phase 2: `Customers`, `Catalog`, `Orders`, and `Inventory` module baseline
+- Phase 3: cross-module workflow from draft order to reservation to invoice-ready state
+- Phase 4: cookie authentication, role-based authorization, billing, reporting, and automated test coverage
 
-- one ASP.NET Core host application loading internal modules
-- React frontend aligned to module-oriented features
-- PostgreSQL database with explicit module ownership boundaries
+Current implementation shape:
+
+- one ASP.NET Core host application
+- explicit in-process module contracts and module-owned schemas
+- PostgreSQL database for the running application
+- SQLite-backed backend test host for fast automated tests
+- React frontend for internal users
 - local Docker workflow with clean seeded data
-- single-application-first deployment model
 
-Planned MVP test baseline for the future build:
+Implemented modules:
 
-- domain tests per module for business rules and state transitions
-- module application tests for use-case flows
-- contract tests for `Orders`, `Inventory`, `Billing`, and `Reporting` interactions
-- API integration tests for host composition, auth, and key routes
-- frontend tests for order, reservation, invoice, and reporting paths
-- smoke tests for seeded end-to-end execution of the main wholesale workflow
+- `Customers`
+- `Catalog`
+- `Orders`
+- `Inventory`
+- `Billing`
+- `Reporting`
+- `Identity`
 
-Implementation should start only after the `docs/` package is reviewed and accepted as the baseline for V1.
+Seeded users:
+
+- `sales@modularmonolith.local`
+- `warehouse@modularmonolith.local`
+- `finance@modularmonolith.local`
+- `manager@modularmonolith.local`
+
+Password for every seeded account:
+
+- `Password123!`
+
+Local run options:
+
+## Docker API + DB
+
+From [docker](C:/Users/cherr/OneDrive/Documents/GitHub/System-Design-Tutorials/tutorials/002-modular-monolith/implementation/docker):
+
+```powershell
+docker compose up -d --build
+```
+
+Runtime ports:
+
+- API: `http://localhost:8082`
+- PostgreSQL: `localhost:5434`
+
+## Frontend dev server
+
+From [src/frontend](C:/Users/cherr/OneDrive/Documents/GitHub/System-Design-Tutorials/tutorials/002-modular-monolith/implementation/src/frontend):
+
+```powershell
+npm install
+npm run dev
+```
+
+Frontend dev URL:
+
+- `http://localhost:5176`
+
+Verification commands used for this implementation:
+
+```powershell
+dotnet build src/backend/sln/SystemDesignTutorials.ModularMonolith.slnx
+dotnet test tests/backend/SystemDesignTutorials.ModularMonolith.Tests/SystemDesignTutorials.ModularMonolith.Tests.csproj
+npm run build
+npm run test
+```
+
+Verified runtime flow:
+
+- unauthenticated API requests return `401`
+- sales users are blocked from manager-only reports with `403`
+- sales can create and reserve orders
+- warehouse users can move reserved orders to invoice-ready state
+- finance users can draft, issue, and mark invoices paid
+- paid invoices allow order completion and commit stock deductions
+- manager reports reflect the completed workflow

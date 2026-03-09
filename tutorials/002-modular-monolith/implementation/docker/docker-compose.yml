@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:17
+    container_name: modular-monolith-db
+    environment:
+      POSTGRES_DB: modular_monolith
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: modular-monolith-api
+    depends_on:
+      - db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=modular_monolith;Username=postgres;Password=postgres
+    ports:
+      - "8082:8080"
+
+
