@@ -77,7 +77,7 @@ The following decisions are finalized for the first implementation:
 - backend: ASP.NET Core API with explicit route contracts
 - auth: same-origin cookie authentication for web-first delivery
 - API style: REST-style JSON endpoints for the main workflows
-- deployment model: single-application-first by serving built SPA assets from the backend host when practical
+- deployment model: API and SPA remain one product boundary; the implemented tutorial uses Vite for the SPA during development plus an ASP.NET Core API and PostgreSQL runtime, while backend-served SPA packaging remains an optional future deployment step
 - local development model: Vite dev server plus API backend is acceptable during development
 - state rule: the server is the source of truth for project, task, and comment state
 - validation rule: the backend owns business validation; the frontend may add UX validation but must not become the authority
@@ -154,6 +154,20 @@ Planned deliverables:
 - end-to-end smoke tests
 - deployment packaging baseline
 - release readiness validation
+
+## Current Implementation Status
+
+Phases 1 to 4 are implemented in the current `implementation/` folder.
+
+Delivered outcomes:
+
+- auth baseline with seeded users and cookie session flow
+- route-based SPA shell plus dashboard, projects, and task detail flows
+- project, membership, task, comment, and filtering workflows
+- backend API integration coverage
+- frontend workflow coverage
+- Playwright smoke coverage for the primary manager path
+- Dockerized API plus PostgreSQL local runtime
 
 ## Milestones
 
@@ -258,7 +272,7 @@ These rules are part of the implementation baseline and should not be deferred t
 
 ## Readiness Gates
 
-Implementation may start only when:
+These gates were satisfied before implementation started:
 
 - the architecture, implementation, deployment, and testing docs are complete
 - the example system and workflow states are accepted
@@ -279,4 +293,4 @@ MVP is complete when:
 
 ## Recommendation
 
-Proceed with implementation only after this document set is accepted as the locked baseline for the first build.
+Use this document as the baseline that the current implementation follows. Future changes should preserve the client-server boundary, the documented workflow rules, and the multi-layer testing requirement.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines how the `003` tutorial should be tested once implementation starts.
+This document defines how the `003` tutorial is tested in the current implementation and how the test baseline should be preserved.
 
 Testing is part of the MVP. It is not a later optional hardening step.
 
@@ -102,6 +102,13 @@ Recommended tooling:
 
 - Playwright
 
+Current smoke harness:
+
+- Playwright starts an isolated backend and frontend runtime
+- the smoke backend uses a temporary SQLite database file
+- the smoke frontend runs through Vite with a dedicated proxy target
+- smoke validation does not depend on the Docker PostgreSQL stack
+
 ## Test Matrix
 
 ### Auth And Session
@@ -175,23 +182,19 @@ Use deterministic seeded data for:
 
 This dataset should support all main test layers without rewriting fixtures per test file.
 
-## Recommended Test Project Layout
+## Current Test Project Layout
 
 ```text
 implementation/
   tests/
     backend/
       SystemDesignTutorials.ClientServerSpaApi.Tests/
-        Domain/
-        Api/
-    frontend/
-      src/
-        auth/
-        dashboard/
-        projects/
-        tasks/
     smoke/
       playwright/
+  src/
+    frontend/
+      src/
+        App.test.tsx
 ```
 
 ## Execution Order
@@ -209,7 +212,7 @@ Recommended CI order:
 3. frontend build
 4. frontend tests
 5. application packaging
-6. smoke tests against the built app
+6. smoke tests against the implemented isolated smoke runtime
 
 ## MVP Test Completion Criteria
 

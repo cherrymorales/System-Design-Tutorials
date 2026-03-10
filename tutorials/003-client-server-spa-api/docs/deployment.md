@@ -9,7 +9,7 @@ The preferred deployment model is:
 - one React SPA
 - one ASP.NET Core backend
 - one PostgreSQL database
-- same-origin hosting in production
+- same-origin-friendly cookie auth and close client/server routing
 
 The browser and API are separate runtime concerns, but they do not need separate production hosts in the MVP.
 
@@ -46,9 +46,16 @@ Development notes:
 - local API should allow the SPA origin used during development
 - local data can be recreated from a clean seed for tutorial workflows
 
-## Production Direction
+Current implemented local runtime:
 
-Recommended production direction for the tutorial:
+- Docker Compose runs PostgreSQL and the ASP.NET Core API
+- the React SPA runs through Vite outside Docker
+- the Vite dev server proxies browser requests to the API
+- the main tutorial ports are `5177`, `8083`, and `5435`
+
+## Optional Future Packaging Direction
+
+If this tutorial is later extended into a packaged same-origin demo or production-style deployment, a sensible next step is:
 
 - build the SPA assets during CI
 - copy the built assets into the backend host image
@@ -65,7 +72,7 @@ Browser
       -> connects to PostgreSQL
 ```
 
-This keeps cookies, routing, and deployment easier than introducing separate frontend hosting on day one.
+This remains optional future work. It is not required for the current tutorial MVP because the architectural lesson is already demonstrated by the existing SPA, API, and test boundary.
 
 ## Container Strategy
 
@@ -133,7 +140,7 @@ CI should:
 - run backend tests
 - build the frontend
 - run frontend tests
-- run smoke-test validation against a built app
+- run smoke-test validation against the implemented isolated smoke harness
 - build the deployable application image
 
 CD should:
@@ -172,7 +179,7 @@ Before deployment is considered ready:
 - backend builds successfully
 - automated tests pass
 - smoke path covers sign-in, dashboard load, project open, task update, and comment creation
-- production host serves SPA fallback routes correctly
+- if packaged same-origin hosting is introduced later, SPA fallback routes behave correctly
 - cookies behave correctly in the target environment
 - database configuration is stable and seeded as expected
 

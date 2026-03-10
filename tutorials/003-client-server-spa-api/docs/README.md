@@ -42,7 +42,7 @@ Recommended tutorial baseline:
 - Backend: ASP.NET Core Web API
 - Database: PostgreSQL or SQL Server
 - ORM: Entity Framework Core
-- Hosting: single-container-first when practical by serving built SPA assets from the backend host
+- Hosting: keep the SPA and API in one product boundary; local development uses a Vite SPA with an ASP.NET Core API, and backend-served SPA packaging is an optional future deployment step
 
 Recommended client-server shape:
 
@@ -94,18 +94,26 @@ Business objective:
 
 ## Implementation Status
 
-This tutorial is currently documentation-first.
+This tutorial now includes a buildable MVP implementation.
 
 Implemented now:
 
 - folder structure for `docs/` and `implementation/`
-- a complete implementation-ready documentation baseline for architecture, workflows, deployment, and testing
+- React SPA pages for login, dashboard, projects, and tasks
+- ASP.NET Core API endpoints for auth, projects, tasks, comments, dashboard data, and membership
+- PostgreSQL-backed local runtime through Docker Compose
+- backend tests, frontend tests, and Playwright smoke coverage
 
-Not started yet:
+Current runtime shape:
 
-- the buildable `003` implementation
+- Vite SPA during local development
+- ASP.NET Core API as the server authority
+- PostgreSQL as the main local database
+- isolated SQLite runtime for smoke and integration tests
 
-The purpose of this document set is to let implementation begin without further architectural ambiguity.
+Optional future extension:
+
+- serve built SPA assets directly from the backend host if packaged same-origin deployment becomes part of the tutorial goal
 
 ## MVP Testing Position
 
@@ -139,7 +147,7 @@ By the end of this tutorial, a developer should understand:
 
 - how the client and server divide responsibilities in a SPA + API system
 - how API contracts shape frontend behavior and backend design together
-- how authenticated browser sessions can remain simple with same-origin hosting
+- how authenticated browser sessions can remain simple with same-origin-friendly cookie auth and aligned client/server routing
 - why authenticated business web apps often fit this pattern well
 - how the architecture should be deployed simply before adding unnecessary runtime complexity
 - how to test both the client and the server in a way that reflects real user workflows

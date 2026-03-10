@@ -38,7 +38,7 @@ This blueprint should teach:
 - backend is an ASP.NET Core API
 - database is PostgreSQL
 - authentication is same-origin cookie auth
-- production direction is one application host serving SPA assets plus API routes
+- runtime direction keeps the SPA and API in one product boundary; the current implementation uses a Vite SPA plus ASP.NET Core API, with backend-served SPA packaging left as an optional future deployment step
 - project access is membership-based
 - task assignment is single-assignee in V1
 - timeline activity is append-only
@@ -434,7 +434,7 @@ The MVP test baseline requires:
 
 ## Keep Simple In The First Build
 
-- use same-origin hosting for production
+- keep the deployed shape simple and same-origin-friendly without forcing packaged SPA hosting into the MVP
 - keep one primary web client
 - keep the task model single-assignee
 - keep comments text-only

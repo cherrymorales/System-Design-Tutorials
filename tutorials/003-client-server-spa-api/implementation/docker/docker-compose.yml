@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:17
+    container_name: client-server-spa-api-db
+    environment:
+      POSTGRES_DB: client_server_spa_api
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: client-server-spa-api
+    depends_on:
+      - db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=client_server_spa_api;Username=postgres;Password=postgres
+    ports:
+      - "8083:8080"

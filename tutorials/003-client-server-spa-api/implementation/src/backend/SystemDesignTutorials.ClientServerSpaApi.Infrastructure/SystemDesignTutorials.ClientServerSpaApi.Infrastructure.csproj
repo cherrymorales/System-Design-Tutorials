@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\SystemDesignTutorials.ClientServerSpaApi.Application\SystemDesignTutorials.ClientServerSpaApi.Application.csproj" />
+    <ProjectReference Include="..\SystemDesignTutorials.ClientServerSpaApi.Domain\SystemDesignTutorials.ClientServerSpaApi.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <CopyBuildOutputToOutputDirectory>false</CopyBuildOutputToOutputDirectory>
+  </PropertyGroup>
+
+  <Target Name="MaterializeInfrastructureOutputs" AfterTargets="Build" Condition="'$(OS)' == 'Windows_NT'">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$dll='$(MSBuildProjectDirectory)\$(IntermediateOutputPath)$(AssemblyName).dll'; $pdb='$(MSBuildProjectDirectory)\$(IntermediateOutputPath)$(AssemblyName).pdb'; $ref='$(MSBuildProjectDirectory)\$(IntermediateOutputPath)refint\$(AssemblyName).dll'; $out='$(MSBuildProjectDirectory)\$(OutputPath)'; $refOut='$(MSBuildProjectDirectory)\$(IntermediateOutputPath)ref'; New-Item -ItemType Directory -Force $out,$refOut | Out-Null; for($i=0; $i -lt 100 -and -not (Test-Path $dll); $i++){ Start-Sleep -Milliseconds 100 }; if(-not (Test-Path $dll)){ throw 'Compiled assembly was not materialized in time.' }; Copy-Item -LiteralPath $dll -Destination $out -Force; if(Test-Path $pdb){ Copy-Item -LiteralPath $pdb -Destination $out -Force }; if(Test-Path $ref){ Copy-Item -LiteralPath $ref -Destination $refOut -Force }&quot;" />
+  </Target>
+
+</Project>

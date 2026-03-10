@@ -86,15 +86,23 @@ The backend API should own:
 
 ## Same-Origin Hosting Strategy
 
-The preferred V1 direction is same-origin hosting.
+The preferred V1 direction is same-origin-friendly web delivery without adding unnecessary auth complexity.
 
 That means:
 
-- the built SPA is served from the same application host as the API in production
-- cookie authentication is simpler and safer for the first implementation
+- cookie authentication stays simple for the first implementation
+- the SPA talks to the API through aligned origins or a development proxy
 - CORS complexity is minimized for the initial release
 
-During development, a separate Vite dev server is acceptable.
+Current implementation:
+
+- local development uses a Vite dev server for the SPA
+- the SPA proxies API requests to the ASP.NET Core backend
+- PostgreSQL remains the main local application database
+
+Optional future deployment step:
+
+- serve built SPA assets directly from the backend host if a packaged same-origin demo or production-style deployment is needed later
 
 ## Authentication Model
 
@@ -107,7 +115,7 @@ Recommended V1 model:
 Why this fits:
 
 - the system is internal and web-first
-- same-origin deployment is planned
+- same-origin-friendly cookie routing stays simple in both the current local runtime and any future packaged host
 - the architecture should stay simple before adding token-based complexity
 
 ## Route Strategy
