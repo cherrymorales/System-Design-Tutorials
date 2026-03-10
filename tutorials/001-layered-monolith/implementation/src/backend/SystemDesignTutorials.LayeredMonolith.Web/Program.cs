@@ -39,3 +39,5 @@ api.MapInventoryEndpoints();
 api.MapWorkflowEndpoints();
 
 app.Run();
+
+public partial class Program;

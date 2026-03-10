@@ -40,11 +40,11 @@ Implemented now in this repository:
 - login, logout, session retrieval, and protected routes
 - role-based access for the four primary user roles
 - warehouse assignment scoping for operators
+- backend API integration tests for core auth and warehouse-scoping behavior
+- frontend automated tests for core login-screen behavior
 
 Not yet implemented:
 
-- backend integration tests for endpoint behavior and authorization
-- frontend automated tests
 - production packaging that serves built frontend assets from ASP.NET Core
 - richer reporting beyond the current low-stock and workflow views
 - strong application-layer use-case services beyond the current simple baseline
@@ -389,13 +389,15 @@ Core tables in practice:
 Current coverage:
 
 - domain-level tests for inventory, product, warehouse, transfer, and adjustment behavior
+- API integration tests for auth and warehouse-scoped authorization behavior
+- frontend tests for login-screen fallback and seeded-user interaction
 - manual runtime verification for login, authorization, and warehouse scoping
 
 Recommended next coverage:
 
-- API integration tests for auth and authorization rules
-- API integration tests for transfer and adjustment workflows
-- frontend tests for login and core workflow screens
+- broader API integration tests for transfer and adjustment workflows
+- frontend tests for core workflow screens beyond login
+- browser end-to-end tests for cross-screen user flows
 
 ## What To Keep Simple
 
@@ -437,6 +439,6 @@ It already demonstrates:
 
 It still needs:
 
-- deeper test coverage
+- deeper end-to-end and smoke-test coverage
 - production packaging refinement
 - cleaner use-case orchestration inside the application layer

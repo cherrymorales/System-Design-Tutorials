@@ -12,7 +12,6 @@ Included now:
 - React frontend with login, protected routes, and a role-aware inventory console
 - PostgreSQL-backed infrastructure baseline
 - Docker support for the API and database
-- domain tests for inventory, product, warehouse, transfer, and adjustment behavior
 - automatic schema creation on application startup for clean local databases
 - ASP.NET Core Identity with seeded users and cookie-based authentication
 - role-based authorization for catalog, warehouse, inventory, transfer, and adjustment workflows
@@ -22,11 +21,11 @@ Included now:
 - stock transfer workflow with request, approve, dispatch, receive, and cancel transitions
 - inventory adjustment workflow with threshold-based approval
 - low-stock reporting endpoint and dashboard view
+- backend automated tests covering domain rules, workflow state machines, and API authorization behavior
+- frontend automated tests covering critical login-screen behavior
 
 Not yet included:
 
-- backend integration tests for API and authorization behavior
-- frontend automated tests
 - single-container packaging that serves the built frontend from ASP.NET Core
 - production-grade migration workflow
 
@@ -133,11 +132,42 @@ The database container is intentionally ephemeral:
 - each fresh container starts from a clean seeded database state
 - this local workflow does not use EF Core migrations
 
+## Testing
+
+Current automated coverage:
+
+- backend domain tests in `tests/backend/SystemDesignTutorials.LayeredMonolith.Tests/InventoryItemTests.cs`
+- backend entity tests in `tests/backend/SystemDesignTutorials.LayeredMonolith.Tests/ProductAndWarehouseTests.cs`
+- backend workflow state-machine tests in `tests/backend/SystemDesignTutorials.LayeredMonolith.Tests/WorkflowTests.cs`
+- backend API integration tests in `tests/backend/SystemDesignTutorials.LayeredMonolith.Tests/ApiIntegrationTests.cs`
+- frontend UI tests in `src/frontend/src/App.test.tsx`
+
+Run the current automated suite:
+
+```powershell
+dotnet test src/backend/sln/SystemDesignTutorials.LayeredMonolith.slnx
+cd src/frontend
+npm run test
+```
+
+Current verified result:
+
+- `14` backend tests passing
+- `2` frontend tests passing
+
+Current testing gaps:
+
+- no browser end-to-end tests yet
+- Docker smoke checks are still manual rather than automated
+
+For the full tutorial testing rationale, see `../docs/testing-strategy.md`.
+
 ## Verification
 
 The current Phase 4 implementation has been verified with:
 
-- `dotnet test` passing with 10 tests
+- `dotnet test` passing with 14 backend tests
+- `npm run test` passing with 2 frontend tests
 - `npm run build` passing for the React frontend
 - `docker compose up -d --build` passing
 - runtime checks confirming:
@@ -158,12 +188,12 @@ Current caveats:
 - most workflow orchestration still lives in endpoint modules rather than richer application services
 - the frontend is still a simple tutorial console rather than a feature-sliced app
 - the local database workflow recreates state instead of applying migrations
-- automated coverage is still limited
+- automated coverage is still light around browser-level end-to-end behavior
 
 ## Recommended Next Targets
 
-- add backend integration tests for authorization and endpoint behavior
-- add frontend test coverage
+- broaden API integration coverage for workflow and error paths
+- add browser end-to-end test coverage
 - package the built SPA into the ASP.NET Core app for a single-container app runtime
 - move workflow orchestration into clearer application-layer services
 - expand reporting screens beyond the low-stock dashboard
