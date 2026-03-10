@@ -98,8 +98,8 @@ The following decisions are finalized and already reflected in the implementatio
 - procurement lifecycle management
 - advanced forecasting
 - multi-tenant architecture
-- frontend automated test suite
-- backend integration test suite for authorization and API flows
+- browser-based end-to-end test suite
+- automated container smoke tests in CI
 
 ## Delivery Phases
 
@@ -151,8 +151,9 @@ Delivered:
 
 Recommended next steps:
 
-- backend integration tests for endpoint and authorization behavior
-- frontend automated tests
+- broader API integration tests for endpoint workflows and error paths
+- browser-based end-to-end tests
+- automated Docker smoke tests
 - production-focused packaging of the built SPA into the ASP.NET Core app
 - reporting screens beyond low-stock views
 - moving workflow orchestration from endpoint modules into explicit application services
@@ -183,8 +184,8 @@ Implemented now:
 
 Still incomplete:
 
-- backend endpoint-level automated integration tests
-- frontend automated workflow coverage
+- broader endpoint-level workflow and error-path integration coverage
+- broader frontend workflow coverage beyond login behavior
 - production-oriented single-container packaging of backend plus built SPA
 
 ## Workflow Decisions

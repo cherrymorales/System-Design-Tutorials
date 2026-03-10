@@ -15,7 +15,16 @@ public static class ServiceCollectionExtensions
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? "Host=localhost;Port=5432;Database=layered_monolith;Username=postgres;Password=postgres";
 
-        services.AddDbContext<LayeredMonolithDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<LayeredMonolithDbContext>(options =>
+        {
+            if (IsSqliteConnection(connectionString))
+            {
+                options.UseSqlite(connectionString);
+                return;
+            }
+
+            options.UseNpgsql(connectionString);
+        });
 
         services
             .AddIdentityCore<AppIdentityUser>(options =>
@@ -65,5 +74,13 @@ public static class ServiceCollectionExtensions
         services.AddAuthorization();
 
         return services;
+    }
+
+    private static bool IsSqliteConnection(string connectionString)
+    {
+        return connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase)
+            || connectionString.Contains("Filename=", StringComparison.OrdinalIgnoreCase)
+            || connectionString.EndsWith(".db", StringComparison.OrdinalIgnoreCase)
+            || connectionString.EndsWith(".sqlite", StringComparison.OrdinalIgnoreCase);
     }
 }

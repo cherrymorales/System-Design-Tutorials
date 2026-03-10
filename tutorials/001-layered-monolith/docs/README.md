@@ -85,8 +85,8 @@ Business objective:
 - public e-commerce storefront
 - advanced forecasting and machine learning
 - multi-tenant SaaS support
-- backend integration test coverage beyond current domain tests
-- frontend automated test coverage
+- browser-based end-to-end testing
+- automated container smoke tests in CI
 
 ## Implementation Status
 
@@ -101,12 +101,14 @@ Implemented now:
 - low-stock reporting
 - login, session handling, role-based authorization, and operator warehouse scoping
 - local Docker runtime for API and database
+- backend domain, workflow, and API integration tests with `14` passing tests
+- frontend automated tests with `2` passing tests
 
 Still recommended as future work:
 
 - stronger application-layer orchestration instead of endpoint-heavy workflow handling
-- backend integration tests for authorization and endpoint flows
-- frontend automated tests
+- browser-based end-to-end workflow tests
+- automated Docker smoke tests in CI
 - production packaging that serves the built SPA from ASP.NET Core in a single app container
 
 ## Tutorial Contents
@@ -115,6 +117,7 @@ Still recommended as future work:
 - [Project Plan](./project-plan.md)
 - [Architecture Guide](./architecture.md)
 - [Implementation Blueprint](./implementation-blueprint.md)
+- [Testing Strategy](./testing-strategy.md)
 - [Deployment Guide](./deployment.md)
 
 ## Intended Audience
@@ -131,6 +134,7 @@ By the end of this tutorial, a developer should understand:
 - how to structure a transactional business system with clear boundaries
 - where business rules should live and where they should not
 - how authorization and warehouse scoping affect both API design and UI behavior
+- how the current testing coverage supports the business model and where more automation should be added
 - where this implementation is intentionally simplified and what a next refactor would improve
 
 ## Definition Of Documentation Accuracy
@@ -142,6 +146,7 @@ This tutorial documentation is accurate when a reader can answer all of the foll
 - what is already implemented in this repository
 - what is still only recommended or future work
 - what runtime and deployment assumptions are actually being used
+- what testing is already automated and what is still manual
 - what tradeoffs the current implementation is making for tutorial simplicity
 
 ## Tradeoffs
