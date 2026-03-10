@@ -1,59 +1,168 @@
 # Client-Server SPA + API
 
-## What It Is
+## Overview
 
-This architecture separates the user interface from the backend by using a single-page application frontend and an API backend.
+A client-server SPA + API architecture separates the interactive web client from the backend application by using a single-page application for the frontend and HTTP APIs for the server.
 
-The client handles presentation and user interaction, while the server exposes business capabilities through HTTP APIs.
+The client owns rendering, navigation, local interaction state, and user workflow presentation. The server owns authentication, business rules, persistence, authorization, and API contracts.
+
+For this tutorial, the architecture is applied to a concrete system: a project delivery and team collaboration platform used by internal teams to manage projects, tasks, comments, and progress dashboards.
+
+## Why This Tutorial Matters
+
+This is one of the most common modern web application architectures in industry.
+
+It is practical because it gives teams:
+
+- a rich, app-like frontend experience
+- clear separation between UI and backend concerns
+- reusable API contracts for future clients
+- a deployment shape that can remain simple when the system is still one product
 
 ## Best Used When
 
-- building modern web applications with rich user experiences
-- frontend and backend concerns should evolve somewhat independently
-- the product needs web-first delivery with clear API contracts
+- the product needs a rich interactive web UI
+- the frontend has meaningful workflow complexity
+- server capabilities should be exposed through clear HTTP contracts
+- the team wants independent frontend and backend iteration without committing to microservices
+- the application is primarily web-first and authenticated
 
 ## Not Ideal When
 
-- the application is mostly static content
-- real-time event-heavy workflows dominate the entire design
-- SEO-heavy public marketing pages are the main requirement without an app-like experience
-
-## Why It Is Common
-
-This is one of the most common industry patterns for business applications because it supports modern frontend development without requiring a fully distributed backend.
+- the product is mostly static or document-style content
+- SEO-heavy public pages are the primary concern and app-like interactions are minimal
+- the system is almost entirely asynchronous or event-driven from the start
+- the frontend has so little behavior that a full SPA is unnecessary complexity
 
 ## Recommended Technology
 
+Recommended tutorial baseline:
+
 - Frontend: React
 - Backend: ASP.NET Core Web API
-- Database: PostgreSQL
-- Hosting: single container for backend plus static frontend files when practical, or separate frontend/backend containers when needed
+- Database: PostgreSQL or SQL Server
+- ORM: Entity Framework Core
+- Hosting: single-container-first when practical by serving built SPA assets from the backend host
 
-## Single-Container Guidance
+Recommended client-server shape:
 
-This can often stay in a single container if the React app is built into static assets and served by the ASP.NET Core application.
+- React SPA with route-based navigation
+- ASP.NET Core API for business workflows and auth
+- one relational database for transactional data
+- same-origin cookie authentication for the first implementation
 
 ## Example Project
 
-**Project idea:** Project management and team collaboration web app
+**Project idea:** Project delivery and team collaboration platform
 
-Why it fits:
+Concrete scenario:
 
-- interactive dashboards
-- forms and workflows
-- role-based access
-- API-friendly domain
+- internal teams manage client and internal delivery projects
+- project managers create projects, milestones, and tasks
+- contributors update task status, due dates, and comments
+- workspace admins manage users and project access
+- team leads need dashboard views for project progress and overdue work
 
-## Suggested Solution Shape
+Business objective:
 
-- React frontend with routing and component-based UI
-- ASP.NET Core REST API
-- JWT or cookie-based authentication
-- PostgreSQL for transactional data
+- replace disconnected spreadsheets and chat-thread coordination
+- provide a responsive task and project workflow UI
+- centralize project status, assignment, and comments in one web app
+- keep the backend API clear enough that future mobile or external clients could reuse it later
+
+## Project Scope
+
+### In Scope
+
+- login and session handling
+- project and task management
+- task comments and activity history
+- dashboard and filter-driven views
+- role-based access within the application
+- API contracts for all major workflows
+- automated testing strategy covering backend, API, frontend, and end-to-end smoke paths
+- project membership and assignee selection for the MVP workflow
+
+### Out Of Scope For The First Implementation
+
+- public marketing site or SEO-focused content system
+- native mobile clients
+- offline-first synchronization
+- real-time collaborative editing
+- file storage pipeline for large attachments
+- external calendar or chat integrations
+
+## Implementation Status
+
+This tutorial is currently documentation-first.
+
+Implemented now:
+
+- folder structure for `docs/` and `implementation/`
+- a complete implementation-ready documentation baseline for architecture, workflows, deployment, and testing
+
+Not started yet:
+
+- the buildable `003` implementation
+
+The purpose of this document set is to let implementation begin without further architectural ambiguity.
+
+## MVP Testing Position
+
+For this tutorial, testing is part of the implementation baseline, not a later hardening phase.
+
+The MVP is only considered complete when it includes:
+
+- backend domain and application tests for business rules
+- API integration tests for contracts and authorization
+- frontend tests for critical user workflows
+- end-to-end smoke tests for the main project-and-task flow
+
+## Tutorial Contents
+
+- [Learning Guide](./learning-guide.md)
+- [Project Plan](./project-plan.md)
+- [Architecture Guide](./architecture.md)
+- [Implementation Blueprint](./implementation-blueprint.md)
+- [Deployment Guide](./deployment.md)
+- [Testing Strategy](./testing-strategy.md)
+
+## Intended Audience
+
+- developers learning how to structure a modern SPA with a clean backend API
+- technical leads deciding when a SPA + API architecture is the right web delivery model
+- contributors who need the architecture and testing baseline agreed before coding starts
+
+## What You Should Learn From This Tutorial
+
+By the end of this tutorial, a developer should understand:
+
+- how the client and server divide responsibilities in a SPA + API system
+- how API contracts shape frontend behavior and backend design together
+- how authenticated browser sessions can remain simple with same-origin hosting
+- why authenticated business web apps often fit this pattern well
+- how the architecture should be deployed simply before adding unnecessary runtime complexity
+- how to test both the client and the server in a way that reflects real user workflows
+
+## Definition Of Documentation Accuracy
+
+This tutorial documentation is accurate when a reader can answer all of the following without guessing:
+
+- what business problem the system solves
+- what the client is responsible for
+- what the server is responsible for
+- what API shape is intended
+- what workflows the MVP includes
+- how the system is intended to be tested
+- how the app should be deployed locally and in production
+- what remains future work
 
 ## Tradeoffs
 
-- clear separation between UI and server logic
-- good developer experience for frontend teams
-- easy to support future mobile clients through the same API
-- requires careful API design to avoid chatty client-server communication
+- excellent fit for rich interactive web applications
+- clean separation between UI and backend responsibilities
+- easy to reuse APIs for future clients
+- requires discipline to avoid chatty or poorly shaped APIs
+- frontend and backend can drift if contracts and validation rules are not kept aligned
+- authentication and authorization must be handled deliberately across both the SPA and API layers
+- screens and API contracts should be designed together or the experience will become awkward quickly
