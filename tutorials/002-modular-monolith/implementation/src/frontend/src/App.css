@@ -5,7 +5,9 @@
   --muted: #62727d;
   --line: #d9d0c3;
   --accent: #0f766e;
+  --accent-strong: #0b5f59;
   --accent-soft: #d7f3ee;
+  --panel-shadow: 0 18px 44px rgba(22, 28, 32, 0.08);
   --warn: #c2410c;
   --warn-soft: #ffedd5;
 }
@@ -14,8 +16,14 @@
   box-sizing: border-box;
 }
 
+body {
+  margin: 0;
+}
+
 .page-shell {
   min-height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
   padding: 2rem;
   background: radial-gradient(circle at top left, #fff9ec 0, var(--bg) 45%, #e9eef1 100%);
   color: var(--ink);
@@ -33,12 +41,16 @@
   border: 1px solid var(--line);
   border-radius: 24px;
   background: color-mix(in srgb, var(--panel) 94%, white 6%);
-  box-shadow: 0 18px 44px rgba(22, 28, 32, 0.08);
+  box-shadow: var(--panel-shadow);
 }
 
 .auth-card {
-  width: min(920px, 100%);
+  width: min(1080px, 100%);
   padding: 2rem;
+}
+
+.auth-form {
+  margin-bottom: 1.5rem;
 }
 
 .hero-panel {
@@ -49,10 +61,20 @@
   margin-bottom: 1.5rem;
 }
 
+.header-copy {
+  min-width: 0;
+}
+
 .header-copy h1,
 .panel-heading h2,
 .auth-card h1 {
   margin: 0.25rem 0 0.5rem;
+  line-height: 1.05;
+}
+
+.header-copy h1,
+.auth-card h1 {
+  font-size: clamp(2.35rem, 3vw, 3.35rem);
 }
 
 .intro,
@@ -62,6 +84,11 @@
 .stat-card small,
 .health-chip small {
   color: var(--muted);
+}
+
+.intro {
+  max-width: 70ch;
+  line-height: 1.55;
 }
 
 .eyebrow {
@@ -75,8 +102,6 @@
 
 .session-meta,
 .info-strip,
-.form-actions,
-.inline-actions,
 .card-summary,
 .hero-actions,
 .account-grid,
@@ -85,6 +110,14 @@
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.form-actions,
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
 }
 
 .hero-actions {
@@ -122,6 +155,7 @@
 .workspace-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
   margin-bottom: 1.5rem;
 }
 
@@ -130,6 +164,7 @@
 }
 
 .panel {
+  min-width: 0;
   padding: 1.25rem;
 }
 
@@ -142,6 +177,8 @@
 }
 
 .entity-form {
+  display: grid;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
 
@@ -158,6 +195,7 @@
 label {
   display: grid;
   gap: 0.35rem;
+  min-width: 0;
   font-size: 0.9rem;
 }
 
@@ -177,17 +215,38 @@ button {
 input,
 select {
   width: 100%;
+  min-width: 0;
   padding: 0.8rem 0.9rem;
   border-radius: 14px;
   border: 1px solid var(--line);
   background: white;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line) 55%);
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.1);
 }
 
 button {
   border: 0;
   border-radius: 999px;
   padding: 0.72rem 1rem;
+  min-height: 3rem;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease;
   cursor: pointer;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  transform: none;
+  opacity: 0.65;
 }
 
 .primary-button {
@@ -195,15 +254,32 @@ button {
   color: white;
 }
 
+.primary-button:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
 .secondary-button {
   background: #e6f3f1;
   color: #0f4d47;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: #d6efea;
 }
 
 .ghost-button {
   background: transparent;
   border: 1px solid var(--line);
   color: var(--ink);
+}
+
+.ghost-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.form-actions button,
+.inline-actions button {
+  min-width: 10.5rem;
 }
 
 .pill,
@@ -246,6 +322,7 @@ button {
 .entity-card {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 1rem;
   padding: 0.9rem 1rem;
   border: 1px solid var(--line);
@@ -275,13 +352,18 @@ button {
 .line-items {
   display: grid;
   gap: 0.75rem;
-  margin-top: 0.75rem;
+  margin-top: 0;
 }
 
 .line-item-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px auto;
-  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) 140px auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.line-item-row .ghost-button {
+  justify-self: start;
 }
 
 .inventory-table-wrapper {
@@ -309,7 +391,7 @@ button {
 
 .account-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   margin-top: 1rem;
 }
 
@@ -319,6 +401,7 @@ button {
   border-radius: 18px;
   border: 1px solid var(--line);
   background: white;
+  min-width: 0;
 }
 
 .account-card span,
@@ -326,6 +409,13 @@ button {
   display: block;
   margin-top: 0.2rem;
   color: var(--muted);
+}
+
+.account-card strong,
+.account-card span,
+.account-card small {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @media (max-width: 860px) {
@@ -339,5 +429,17 @@ button {
 
   .line-item-row {
     grid-template-columns: 1fr;
+  }
+
+  .form-actions,
+  .inline-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions button,
+  .inline-actions button {
+    width: 100%;
+    min-width: 0;
   }
 }
