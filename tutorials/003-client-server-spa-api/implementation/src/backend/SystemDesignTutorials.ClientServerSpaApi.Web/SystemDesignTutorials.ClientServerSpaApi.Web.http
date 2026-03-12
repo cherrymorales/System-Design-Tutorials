@@ -1,0 +1,6 @@
+@SystemDesignTutorials.ClientServerSpaApi.Web_HostAddress = http://localhost:5090
+
+GET {{SystemDesignTutorials.ClientServerSpaApi.Web_HostAddress}}/api/health
+Accept: application/json
+
+###

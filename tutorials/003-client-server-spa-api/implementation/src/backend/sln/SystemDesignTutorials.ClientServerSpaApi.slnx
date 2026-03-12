@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../../../tests/backend/SystemDesignTutorials.ClientServerSpaApi.Tests/SystemDesignTutorials.ClientServerSpaApi.Tests.csproj" />
+  <Project Path="../SystemDesignTutorials.ClientServerSpaApi.Application/SystemDesignTutorials.ClientServerSpaApi.Application.csproj" />
+  <Project Path="../SystemDesignTutorials.ClientServerSpaApi.Domain/SystemDesignTutorials.ClientServerSpaApi.Domain.csproj" />
+  <Project Path="../SystemDesignTutorials.ClientServerSpaApi.Web/SystemDesignTutorials.ClientServerSpaApi.Web.csproj" />
+</Solution>
