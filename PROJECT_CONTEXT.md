@@ -26,13 +26,19 @@ The goal is to document common architectural approaches in a way that is easy to
 
 ## Initial Scope
 
-The project starts with five widely used architectural styles:
+The project started with five widely used architectural styles and now extends into the next set of modern patterns that are commonly discussed in industry:
 
 1. Layered Monolith
 2. Modular Monolith
 3. Client-Server SPA + API
 4. Microservices
 5. Event-Driven Architecture
+6. CQRS
+7. Saga Distributed Transactions
+8. Multitenant SaaS
+9. Serverless Architecture
+10. Web Queue Worker
+11. Event Sourcing
 
 ## Default Technology Direction
 
@@ -78,6 +84,12 @@ Current planned order:
 3. `003-client-server-spa-api`
 4. `004-microservices`
 5. `005-event-driven-architecture`
+6. `006-cqrs`
+7. `007-saga-distributed-transactions`
+8. `008-multitenant-saas`
+9. `009-serverless-architecture`
+10. `010-web-queue-worker`
+11. `011-event-sourcing`
 
 Each tutorial document should cover:
 

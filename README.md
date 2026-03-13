@@ -15,6 +15,12 @@ Current tutorials:
 3. `003-client-server-spa-api`
 4. `004-microservices`
 5. `005-event-driven-architecture`
+6. `006-cqrs`
+7. `007-saga-distributed-transactions`
+8. `008-multitenant-saas`
+9. `009-serverless-architecture`
+10. `010-web-queue-worker`
+11. `011-event-sourcing`
 
 ## Folder Structure
 
