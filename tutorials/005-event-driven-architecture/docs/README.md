@@ -1,61 +1,151 @@
 # Event-Driven Architecture
 
-## What It Is
+## Overview
 
-An event-driven architecture coordinates system behavior through events. One part of the system publishes an event, and other parts react to it asynchronously.
+Event-driven architecture coordinates system behavior through events instead of tight request chaining.
 
-This reduces direct coupling and works well for workflows that span multiple capabilities.
+One component publishes that something happened, and one or more other components react asynchronously. This makes it a strong fit for workflows where many downstream actions must happen independently, at different speeds, and with different scaling characteristics.
+
+For this tutorial, the architecture is applied to a concrete system: a digital asset ingestion and processing platform for a media operations team.
+
+## Why This Tutorial Matters
+
+Event-driven design is widely used in industry, but it is often discussed only at a slogan level.
+
+This tutorial matters because it shows:
+
+- what an event-driven workflow actually looks like
+- when asynchronous fan-out is a better fit than request chaining
+- how retries, idempotency, dead-lettering, and eventual consistency affect design
+- how to test a system whose behavior unfolds across multiple handlers
 
 ## Best Used When
 
-- business processes are naturally asynchronous
-- multiple systems need to react to the same business action
-- auditability and decoupling are important
-- the platform needs responsive workflows without tight request chaining
+- one business action must trigger multiple downstream reactions
+- work is asynchronous by nature
+- independent consumers need to scale separately
+- the system must stay responsive while background processing continues
+- eventual consistency is acceptable and visible to operators
 
 ## Not Ideal When
 
-- the domain is simple and synchronous request-response flows are enough
-- the team is not ready for eventual consistency and asynchronous debugging
-
-## Why It Is Common
-
-Modern systems frequently use event-driven patterns for integrations, background processing, notifications, and scalable business workflows.
+- the workflow is mostly synchronous and simple
+- one database transaction already solves the business problem
+- the team is not ready to operate messaging, retries, and observability
+- the UI cannot tolerate delayed downstream completion
 
 ## Recommended Technology
 
-- Frontend: React
-- Backend: ASP.NET Core
-- Messaging: RabbitMQ for simpler setups, Kafka for high-throughput event streaming
-- Database: PostgreSQL plus outbox pattern when reliability matters
-- Hosting: usually multiple containers when a message broker is involved
+Recommended tutorial baseline:
 
-## Single-Container Guidance
-
-The application code may stay simple, but true event-driven solutions often need at least a separate broker container. Single-container deployment is possible only for learning or lightweight demos.
+- Frontend: React operations console
+- Backend API: ASP.NET Core
+- Background processing: ASP.NET Core worker services
+- Messaging: RabbitMQ for tutorial-scale messaging
+- Transactional storage: PostgreSQL
+- Blob or object storage: local object store emulator or cloud object storage in production
+- Reliability patterns: outbox, idempotent consumers, dead-letter queues
 
 ## Example Project
 
-**Project idea:** Online order processing and notification platform
+**Project idea:** Digital asset ingestion and processing platform
 
-Example event flow:
+Concrete scenario:
 
-- order created
-- payment confirmed
-- inventory reserved
-- shipment scheduled
-- customer notified
+- media operators upload raw video and image assets
+- a submit action triggers multiple background reactions
+- the system scans files, extracts metadata, generates derivatives, updates processing status, and notifies operators
+- the React console is used to monitor processing state and intervene when failures occur
 
-## Suggested Solution Shape
+Core workflow in scope:
 
-- React frontend for order and operations views
-- ASP.NET Core APIs and workers
-- RabbitMQ for domain events and background workflows
-- PostgreSQL for transactional state
+- asset registered
+- upload completed
+- scan completed
+- metadata extracted
+- thumbnails generated
+- transcode completed
+- asset marked ready
+- notification requested
 
-## Tradeoffs
+## Scope
 
-- good decoupling between business capabilities
-- scalable asynchronous processing
-- easier fan-out to multiple consumers
-- harder debugging, replay, monitoring, and consistency management
+### In Scope
+
+- authenticated operations console
+- asset registration and upload initiation
+- asynchronous processing pipeline
+- fan-out event handling
+- status projection for operations users
+- retry and failure visibility
+- automated testing across API, handlers, contracts, frontend, and smoke flow
+
+### Out Of Scope For The First Implementation
+
+- public content delivery
+- external CDN integration
+- human moderation workflows
+- AI enrichment and tagging
+- multi-region disaster recovery
+- advanced workflow designer tooling
+
+## Implementation Status
+
+This tutorial is now documentation-ready but not implemented yet.
+
+Implemented now:
+
+- full tutorial baseline for learning, planning, architecture, deployment, and testing
+
+Not started yet:
+
+- the buildable `005` example implementation
+
+## MVP Testing Position
+
+For this tutorial, testing is part of the architecture baseline.
+
+The MVP is only considered complete when it includes:
+
+- handler and domain tests for core processing rules
+- API integration tests for asset submission and status APIs
+- contract tests for published and consumed events
+- frontend workflow tests for the operations console
+- smoke validation of the end-to-end processing pipeline
+
+## Tutorial Contents
+
+- [Learning Guide](./learning-guide.md)
+- [Project Plan](./project-plan.md)
+- [Architecture Guide](./architecture.md)
+- [Implementation Blueprint](./implementation-blueprint.md)
+- [Deployment Guide](./deployment.md)
+- [Testing Strategy](./testing-strategy.md)
+
+## Intended Audience
+
+- developers learning when asynchronous event handling is justified
+- architects comparing request-driven and event-driven designs
+- contributors who need a concrete baseline before implementation begins
+
+## What You Should Learn From This Tutorial
+
+By the end of this tutorial, a developer should understand:
+
+- when an event is a better integration boundary than a synchronous call
+- how fan-out changes system behavior and testing needs
+- why idempotency and retries are not optional in event-driven systems
+- how status projections support operational visibility
+- when event-driven architecture is a good fit and when it adds unnecessary complexity
+
+## Definition Of Documentation Accuracy
+
+This tutorial documentation is accurate when a reader can answer all of the following without guessing:
+
+- what business problem the system solves
+- which events matter and why
+- which components publish and consume those events
+- how failures and retries are handled
+- how operators observe pipeline progress
+- how the MVP should be tested
+- how the system is intended to run locally and beyond local development
