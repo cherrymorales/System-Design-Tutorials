@@ -1,0 +1,162 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5436:5432"
+    volumes:
+      - ../infra/postgres-init:/docker-entrypoint-initdb.d:ro
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+
+  identity:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        PROJECT_PATH: src/services/Identity/SystemDesignTutorials.Microservices.Identity/SystemDesignTutorials.Microservices.Identity.csproj
+        APP_DLL: SystemDesignTutorials.Microservices.Identity.dll
+    environment:
+      ConnectionStrings__Identity: Host=postgres;Port=5432;Database=micro_identity;Username=postgres;Password=postgres
+      InternalApi__ApiKey: microservices-dev-key
+    depends_on:
+      - postgres
+
+  catalog:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        PROJECT_PATH: src/services/Catalog/SystemDesignTutorials.Microservices.Catalog/SystemDesignTutorials.Microservices.Catalog.csproj
+        APP_DLL: SystemDesignTutorials.Microservices.Catalog.dll
+    environment:
+      ConnectionStrings__Catalog: Host=postgres;Port=5432;Database=micro_catalog;Username=postgres;Password=postgres
+      InternalApi__ApiKey: microservices-dev-key
+    depends_on:
+      - postgres
+
+  orders:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        PROJECT_PATH: src/services/Orders/SystemDesignTutorials.Microservices.Orders/SystemDesignTutorials.Microservices.Orders.csproj
+        APP_DLL: SystemDesignTutorials.Microservices.Orders.dll
+    environment:
+      ConnectionStrings__Orders: Host=postgres;Port=5432;Database=micro_orders;Username=postgres;Password=postgres
+      ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+      InternalApi__ApiKey: microservices-dev-key
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  inventory:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        PROJECT_PATH: src/services/Inventory/SystemDesignTutorials.Microservices.Inventory/SystemDesignTutorials.Microservices.Inventory.csproj
+        APP_DLL: SystemDesignTutorials.Microservices.Inventory.dll
+    environment:
+      ConnectionStrings__Inventory: Host=postgres;Port=5432;Database=micro_inventory;Username=postgres;Password=postgres
+      ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+      InternalApi__ApiKey: microservices-dev-key
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  payments:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        PROJECT_PATH: src/services/Payments/SystemDesignTutorials.Microservices.Payments/SystemDesignTutorials.Microservices.Payments.csproj
+        APP_DLL: SystemDesignTutorials.Microservices.Payments.dll
+    environment:
+      ConnectionStrings__Payments: Host=postgres;Port=5432;Database=micro_payments;Username=postgres;Password=postgres
+      ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+      InternalApi__ApiKey: microservices-dev-key
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  fulfillment:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        PROJECT_PATH: src/services/Fulfillment/SystemDesignTutorials.Microservices.Fulfillment/SystemDesignTutorials.Microservices.Fulfillment.csproj
+        APP_DLL: SystemDesignTutorials.Microservices.Fulfillment.dll
+    environment:
+      ConnectionStrings__Fulfillment: Host=postgres;Port=5432;Database=micro_fulfillment;Username=postgres;Password=postgres
+      ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+      InternalApi__ApiKey: microservices-dev-key
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  notifications:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        PROJECT_PATH: src/services/Notifications/SystemDesignTutorials.Microservices.Notifications/SystemDesignTutorials.Microservices.Notifications.csproj
+        APP_DLL: SystemDesignTutorials.Microservices.Notifications.dll
+    environment:
+      ConnectionStrings__Notifications: Host=postgres;Port=5432;Database=micro_notifications;Username=postgres;Password=postgres
+      ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+      InternalApi__ApiKey: microservices-dev-key
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  operations-query:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        PROJECT_PATH: src/services/OperationsQuery/SystemDesignTutorials.Microservices.OperationsQuery/SystemDesignTutorials.Microservices.OperationsQuery.csproj
+        APP_DLL: SystemDesignTutorials.Microservices.OperationsQuery.dll
+    environment:
+      ConnectionStrings__OperationsQuery: Host=postgres;Port=5432;Database=micro_operations_query;Username=postgres;Password=postgres
+      ConnectionStrings__RabbitMq: amqp://guest:guest@rabbitmq:5672/
+      InternalApi__ApiKey: microservices-dev-key
+    depends_on:
+      - postgres
+      - rabbitmq
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.service
+      args:
+        PROJECT_PATH: src/gateway/SystemDesignTutorials.Microservices.Gateway/SystemDesignTutorials.Microservices.Gateway.csproj
+        APP_DLL: SystemDesignTutorials.Microservices.Gateway.dll
+    environment:
+      InternalApi__ApiKey: microservices-dev-key
+      Services__Identity: http://identity:8080
+      Services__Catalog: http://catalog:8080
+      Services__Orders: http://orders:8080
+      Services__Inventory: http://inventory:8080
+      Services__Payments: http://payments:8080
+      Services__Fulfillment: http://fulfillment:8080
+      Services__Notifications: http://notifications:8080
+      Services__OperationsQuery: http://operations-query:8080
+    depends_on:
+      - identity
+      - catalog
+      - orders
+      - inventory
+      - payments
+      - fulfillment
+      - notifications
+      - operations-query
+    ports:
+      - "8084:8080"

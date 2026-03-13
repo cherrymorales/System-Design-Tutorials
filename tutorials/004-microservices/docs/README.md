@@ -1,17 +1,31 @@
 # Microservices
 
-## What It Is
+## Overview
 
-Microservices split a system into multiple independently deployable services, each responsible for a focused business capability.
+Microservices split a product into multiple independently deployable services, each responsible for a focused business capability and its own operational lifecycle.
 
-Each service owns its logic and often its own data store, while the full product emerges from collaboration between services.
+Each service owns its logic and data, while the full product emerges from explicit synchronous contracts, asynchronous events, and operational tooling around the distributed system.
+
+For this tutorial, the architecture is applied to a concrete system: an omnichannel commerce operations platform for a national retailer that manages catalog, orders, inventory, payments, fulfillment, notifications, and dashboard projections across separate service teams.
+
+## Why This Tutorial Matters
+
+Microservices are common in industry, but they are also one of the architectures most often adopted too early or explained too vaguely.
+
+This tutorial matters because it shows:
+
+- when microservices are justified
+- what real service boundaries look like
+- why gateway, messaging, data ownership, and observability are part of the architecture, not optional extras
+- how a microservices system should be tested beyond simple unit tests
 
 ## Best Used When
 
-- the business domain is large and clearly divided into bounded contexts
-- multiple teams need to work and deploy independently
-- some parts of the platform require different scaling behavior
-- platform maturity is high enough to support distributed systems operations
+- the business domain already has multiple stable bounded contexts
+- multiple teams need independent deployment and ownership
+- some parts of the system need different scaling or release cadence
+- asynchronous workflows and eventual consistency are acceptable and understood
+- the organization can support distributed system operations
 
 ## Not Ideal When
 
@@ -20,46 +34,155 @@ Each service owns its logic and often its own data store, while the full product
 - deployment and observability maturity are low
 - a modular monolith would solve the problem more simply
 
-## Why It Is Common
-
-This is a widely used architecture in larger organizations because it helps scale teams and systems independently, but it comes with real operational cost.
-
 ## Recommended Technology
 
-- Frontend: React
-- Backend: ASP.NET Core services by default
-- Communication: REST for simple interactions, messaging for asynchronous flows
-- Data: database per service where possible
-- Hosting: multiple containers are usually required
+Recommended tutorial baseline:
 
-## Single-Container Guidance
+- Frontend: React SPA for the internal operations console
+- Gateway/BFF: ASP.NET Core with YARP or equivalent reverse proxy
+- Backend services: ASP.NET Core by default
+- Messaging: RabbitMQ for tutorial-scale asynchronous workflows
+- Data: PostgreSQL with database-per-service ownership
+- Observability: OpenTelemetry, centralized logs, and health endpoints
 
-This architecture is usually not a good fit for single-container deployment. Multiple containers are normally the right choice because service independence is part of the design.
+Recommended service shape:
+
+- one public gateway or BFF
+- multiple independently deployed services
+- one message broker
+- separate service-owned databases
+- one read-model service for cross-service dashboard queries
 
 ## Example Project
 
-**Project idea:** Large e-commerce platform
+**Project idea:** Omnichannel commerce operations platform
 
-Possible services:
+Concrete scenario:
 
-- product catalog
-- cart
-- checkout
-- payment
-- shipping
-- notification
+- the retailer sells consumer products across web, mobile, and customer-support-assisted channels
+- a React internal operations console is used by catalog, order operations, finance, inventory, and fulfillment teams
+- orders require coordination across several services instead of one shared application
+- the company now needs independent service ownership, service-level scaling, and asynchronous workflow recovery
 
-## Suggested Solution Shape
+Core services in scope:
 
-- React storefront and admin portal
-- ASP.NET Core services per domain capability
-- API gateway for client access
-- RabbitMQ or Kafka for asynchronous communication
-- separate persistence per service
+- `GatewayBff`
+- `Identity`
+- `Catalog`
+- `Orders`
+- `Inventory`
+- `Payments`
+- `Fulfillment`
+- `Notifications`
+- `OperationsQuery`
+
+Business objective:
+
+- replace a tightly coupled commerce backend with explicit service boundaries
+- support order submission, payment authorization, stock reservation, shipment progression, and notifications through service collaboration
+- keep browser interactions simple by exposing one stable gateway while preserving independent service ownership behind it
+- teach how distributed workflows, eventual consistency, and multi-layer testing actually work in practice
+
+## Project Scope
+
+### In Scope
+
+- gateway-based browser access to the microservices system
+- role-based authenticated internal operations console
+- catalog and product availability views
+- order creation and order-status progression
+- stock reservation and release
+- payment authorization and failure handling
+- fulfillment creation and shipment progression
+- notification request generation
+- dashboard and projection views built from service events
+- automated tests covering service rules, HTTP contracts, event flows, UI workflows, and smoke paths
+
+### Out Of Scope For The First Implementation
+
+- public storefront UX
+- real external payment provider integration
+- warehouse robotics or carrier integration
+- multi-region active-active deployment
+- recommendation engine and search indexing
+- full-blown workflow engine adoption
+
+## Implementation Status
+
+This tutorial now includes a buildable MVP implementation.
+
+Implemented now:
+
+- React operations console
+- ASP.NET Core gateway/BFF
+- service-owned ASP.NET Core services
+- RabbitMQ-based distributed workflow orchestration
+- PostgreSQL database-per-service local baseline
+- automated service, gateway, contract, frontend, and smoke-test coverage
+
+Implementation package:
+
+- `../implementation/README.md`
+- `../implementation/docker/docker-compose.yml`
+- `../implementation/src/`
+- `../implementation/tests/`
+
+The remaining value of this document set is to explain why the service boundaries, workflow rules, deployment model, and testing approach were chosen.
+
+## MVP Testing Position
+
+For this tutorial, testing is part of the architecture baseline, not a later hardening phase.
+
+The MVP is only considered complete when it includes:
+
+- service-level domain and application tests
+- HTTP API integration tests
+- event and contract tests across services
+- frontend workflow tests through the gateway
+- end-to-end smoke validation of the main order workflow
+
+## Tutorial Contents
+
+- [Learning Guide](./learning-guide.md)
+- [Project Plan](./project-plan.md)
+- [Architecture Guide](./architecture.md)
+- [Implementation Blueprint](./implementation-blueprint.md)
+- [Deployment Guide](./deployment.md)
+- [Testing Strategy](./testing-strategy.md)
+
+## Intended Audience
+
+- developers learning when microservices are justified beyond theory
+- technical leads deciding whether service decomposition is worth the operational cost
+- contributors who need a precise service and workflow baseline before implementation begins
+
+## What You Should Learn From This Tutorial
+
+By the end of this tutorial, a developer should understand:
+
+- how to choose service boundaries based on business ownership
+- why gateway, messaging, and observability are mandatory parts of a microservices architecture
+- how distributed workflows differ from in-process modular workflows
+- how eventual consistency changes API and UI expectations
+- how a microservices system should be tested across service, contract, UI, and smoke layers
+- when this architecture is justified and when it is not
+
+## Definition Of Documentation Accuracy
+
+This tutorial documentation is accurate when a reader can answer all of the following without guessing:
+
+- what business problem the system solves
+- what services exist and why
+- which service owns which data and workflows
+- how services communicate
+- what the main distributed workflow looks like
+- how the MVP should be tested
+- how the system is intended to be deployed locally and beyond local development
+- what remains future work
 
 ## Tradeoffs
 
-- strong team and deployment independence
-- flexible scaling by service
-- better alignment with large domains
-- higher complexity in deployment, observability, testing, and data consistency
+- strong service ownership and deployment independence
+- better scaling and release isolation for large domains
+- clearer fit for asynchronous and independently evolving capabilities
+- much higher complexity in deployment, debugging, consistency, testing, and operational support

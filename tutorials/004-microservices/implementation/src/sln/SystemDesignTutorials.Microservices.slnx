@@ -1,0 +1,16 @@
+<Solution>
+  <Project Path="../../tests/contracts/SystemDesignTutorials.Microservices.Contracts.Tests/SystemDesignTutorials.Microservices.Contracts.Tests.csproj" />
+  <Project Path="../../tests/gateway/SystemDesignTutorials.Microservices.Gateway.Tests/SystemDesignTutorials.Microservices.Gateway.Tests.csproj" />
+  <Project Path="../../tests/services/SystemDesignTutorials.Microservices.Services.Tests/SystemDesignTutorials.Microservices.Services.Tests.csproj" />
+  <Project Path="../gateway/SystemDesignTutorials.Microservices.Gateway/SystemDesignTutorials.Microservices.Gateway.csproj" />
+  <Project Path="../services/Catalog/SystemDesignTutorials.Microservices.Catalog/SystemDesignTutorials.Microservices.Catalog.csproj" />
+  <Project Path="../services/Fulfillment/SystemDesignTutorials.Microservices.Fulfillment/SystemDesignTutorials.Microservices.Fulfillment.csproj" />
+  <Project Path="../services/Identity/SystemDesignTutorials.Microservices.Identity/SystemDesignTutorials.Microservices.Identity.csproj" />
+  <Project Path="../services/Inventory/SystemDesignTutorials.Microservices.Inventory/SystemDesignTutorials.Microservices.Inventory.csproj" />
+  <Project Path="../services/Notifications/SystemDesignTutorials.Microservices.Notifications/SystemDesignTutorials.Microservices.Notifications.csproj" />
+  <Project Path="../services/OperationsQuery/SystemDesignTutorials.Microservices.OperationsQuery/SystemDesignTutorials.Microservices.OperationsQuery.csproj" />
+  <Project Path="../services/Orders/SystemDesignTutorials.Microservices.Orders/SystemDesignTutorials.Microservices.Orders.csproj" />
+  <Project Path="../services/Payments/SystemDesignTutorials.Microservices.Payments/SystemDesignTutorials.Microservices.Payments.csproj" />
+  <Project Path="../shared/SystemDesignTutorials.Microservices.BuildingBlocks/SystemDesignTutorials.Microservices.BuildingBlocks.csproj" />
+  <Project Path="../shared/SystemDesignTutorials.Microservices.Contracts/SystemDesignTutorials.Microservices.Contracts.csproj" />
+</Solution>
