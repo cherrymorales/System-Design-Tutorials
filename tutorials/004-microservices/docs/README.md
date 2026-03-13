@@ -109,18 +109,25 @@ Business objective:
 
 ## Implementation Status
 
-This tutorial is currently documentation-first.
+This tutorial now includes a buildable MVP implementation.
 
 Implemented now:
 
-- folder structure for `docs/` and `implementation/`
-- a complete implementation-ready documentation baseline for service boundaries, workflow decisions, deployment, and testing
+- React operations console
+- ASP.NET Core gateway/BFF
+- service-owned ASP.NET Core services
+- RabbitMQ-based distributed workflow orchestration
+- PostgreSQL database-per-service local baseline
+- automated service, gateway, contract, frontend, and smoke-test coverage
 
-Not started yet:
+Implementation package:
 
-- the buildable `004` implementation
+- `../implementation/README.md`
+- `../implementation/docker/docker-compose.yml`
+- `../implementation/src/`
+- `../implementation/tests/`
 
-The purpose of this document set is to let implementation begin without further architectural ambiguity.
+The remaining value of this document set is to explain why the service boundaries, workflow rules, deployment model, and testing approach were chosen.
 
 ## MVP Testing Position
 

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\shared\SystemDesignTutorials.Microservices.Contracts\SystemDesignTutorials.Microservices.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\shared\SystemDesignTutorials.Microservices.BuildingBlocks\SystemDesignTutorials.Microservices.BuildingBlocks.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.3.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseAppHost>false</UseAppHost>
+    <CopyBuildOutputToOutputDirectory>false</CopyBuildOutputToOutputDirectory>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+  </PropertyGroup>
+
+  <Target Name="CopyBuildOutputManually" AfterTargets="Build">
+    <MakeDir Directories="$(OutputPath)" />
+    <Copy SourceFiles="$(IntermediateOutputPath)$(TargetFileName)" DestinationFolder="$(OutputPath)" Condition="Exists('$(IntermediateOutputPath)$(TargetFileName)')" />
+    <Copy SourceFiles="$(IntermediateOutputPath)$(TargetName).pdb" DestinationFolder="$(OutputPath)" Condition="Exists('$(IntermediateOutputPath)$(TargetName).pdb')" />
+  </Target>
+
+</Project>

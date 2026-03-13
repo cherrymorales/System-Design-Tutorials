@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines how the `004-microservices` MVP should be tested.
+This document defines how the implemented `004-microservices` MVP is tested.
 
 The goal is not only to verify business correctness, but also to prove that the distributed architecture behaves like real microservices rather than a distributed monolith.
 
@@ -18,6 +18,23 @@ The test suite must prove six things:
 - the main business path works end to end on a seeded running environment
 
 Tests are part of the MVP baseline. They are not deferred to post-MVP hardening.
+
+## Implementation Status
+
+Implemented now:
+
+- service workflow and business-rule tests
+- gateway API tests
+- contract and integration-event tests
+- frontend tests
+- end-to-end Playwright smoke coverage for the primary success path
+
+Current verification commands:
+
+- `dotnet test src/sln/SystemDesignTutorials.Microservices.slnx`
+- `npm test -- --run` in `implementation/src/frontend`
+- `npm run build` in `implementation/src/frontend`
+- `npm test` in `implementation/tests/smoke`
 
 ## Test Layers
 

@@ -115,9 +115,16 @@ The following decisions are finalized for the first implementation:
 
 ## Recommended Delivery Phases
 
+Current status:
+
+- Phase 1 implemented
+- Phase 2 implemented
+- Phase 3 implemented
+- Phase 4 implemented
+
 ### Phase 1: Foundation And Platform Skeleton
 
-Planned deliverables:
+Implemented deliverables:
 
 - gateway skeleton
 - service skeletons for all in-scope services
@@ -128,7 +135,7 @@ Planned deliverables:
 
 ### Phase 2: Core Service Ownership
 
-Planned deliverables:
+Implemented deliverables:
 
 - `Identity` service baseline
 - `Catalog` service
@@ -139,7 +146,7 @@ Planned deliverables:
 
 ### Phase 3: Distributed Workflow Baseline
 
-Planned deliverables:
+Implemented deliverables:
 
 - order submission saga orchestration
 - payment authorization path
@@ -151,7 +158,7 @@ Planned deliverables:
 
 ### Phase 4: Hardening And Release Readiness
 
-Planned deliverables:
+Implemented deliverables:
 
 - authorization refinement across the gateway and services
 - gateway composition cleanup
@@ -310,4 +317,4 @@ MVP is complete when:
 
 ## Recommendation
 
-Proceed with implementation only after this document set and the testing strategy are accepted as the locked baseline for V1.
+Use this document as the implementation baseline and as the reference for evaluating whether future changes preserve the intended service boundaries and workflow behavior.
