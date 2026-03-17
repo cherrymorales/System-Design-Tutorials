@@ -11,9 +11,9 @@ This tutorial is organized into two explicit parts:
 
 `docs/` contains the locked architecture, project plan, implementation blueprint, deployment model, learning guide, and testing strategy.
 
-`implementation/` is reserved for the future buildable example once the document set is accepted.
+`implementation/` contains the buildable example and supporting implementation assets.
 
 Current state:
 
-- documentation is complete as the implementation-ready baseline
-- implementation has not started
+- documentation is complete
+- implementation is complete

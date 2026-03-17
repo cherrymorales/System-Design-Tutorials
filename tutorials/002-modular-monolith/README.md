@@ -6,9 +6,9 @@ This folder is split into two explicit parts:
 - [Implementation](./implementation/README.md)
 
 Use `docs/` for the architecture, planning, learning, and testing package.
-Use `implementation/` for the future buildable example.
+Use `implementation/` for the actual codebase and supporting implementation assets.
 
 Current status:
 
-- documentation package: implementation-ready baseline complete, including MVP test strategy
-- implementation package: not started yet
+- documentation is complete
+- implementation is complete

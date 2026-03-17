@@ -7,3 +7,8 @@ This folder is split into two explicit parts:
 
 Use `docs/` to study the architecture and project plan.
 Use `implementation/` for the actual codebase and supporting implementation assets.
+
+Current status:
+
+- documentation is complete
+- implementation is complete

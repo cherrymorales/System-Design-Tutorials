@@ -76,7 +76,6 @@ The most developed tutorial so far is:
 - [002-modular-monolith](./tutorials/002-modular-monolith/README.md)
 - [003-client-server-spa-api](./tutorials/003-client-server-spa-api/README.md)
 - [004-microservices](./tutorials/004-microservices/README.md)
-- [005-event-driven-architecture](./tutorials/005-event-driven-architecture/README.md) (pending implementation)
 
 Its documentation includes:
 

@@ -5,12 +5,11 @@ This folder is split into two explicit parts:
 - [Docs](./docs/README.md)
 - [Implementation](./implementation/README.md)
 
-Use `docs/` for the learning and planning documents.
-Use `implementation/` for the future buildable example.
+`docs/` contains the locked architecture, project plan, implementation blueprint, deployment model, learning guide, and testing strategy.
 
-Current tutorial state:
+`implementation/` contains the buildable example and supporting implementation assets.
 
-- `docs/` is implementation-ready
-- `implementation/` is intentionally not started yet
+Current state:
 
-This tutorial uses a concrete example system: an omnichannel commerce operations platform for a national retailer that has already outgrown a monolith and now needs service-level ownership, scaling isolation, and asynchronous workflows.
+- documentation is complete
+- implementation is complete
