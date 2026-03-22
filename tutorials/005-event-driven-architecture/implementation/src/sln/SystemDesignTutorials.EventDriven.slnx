@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="../../tests/backend/SystemDesignTutorials.EventDriven.Tests/SystemDesignTutorials.EventDriven.Tests.csproj" />
+  <Project Path="../../tests/contracts/SystemDesignTutorials.EventDriven.Contracts.Tests/SystemDesignTutorials.EventDriven.Contracts.Tests.csproj" />
+  <Project Path="../api/SystemDesignTutorials.EventDriven.Api/SystemDesignTutorials.EventDriven.Api.csproj" />
+  <Project Path="../shared/SystemDesignTutorials.EventDriven.Contracts/SystemDesignTutorials.EventDriven.Contracts.csproj" />
+  <Project Path="../shared/SystemDesignTutorials.EventDriven.Core/SystemDesignTutorials.EventDriven.Core.csproj" />
+  <Project Path="../workers/SystemDesignTutorials.EventDriven.Workers/SystemDesignTutorials.EventDriven.Workers.csproj" />
+</Solution>
