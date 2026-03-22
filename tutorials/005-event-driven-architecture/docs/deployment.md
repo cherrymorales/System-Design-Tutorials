@@ -30,6 +30,7 @@ For this tutorial, multiple containers are recommended because they keep the bro
 - seeded users and sample assets
 - local broker and database
 - logs visible per component
+- Vite frontend running separately during development and smoke validation
 
 ### Higher Environments
 
@@ -93,6 +94,17 @@ The system should not be considered ready for release unless:
 - dead-letter handling exists
 - smoke tests pass against the deployed local stack
 - operators can see status progression in the console
+
+## Current Tutorial Runtime
+
+The implemented tutorial runs locally with:
+
+- API container on `8085`
+- worker container connected to the same broker and database
+- PostgreSQL on `5437`
+- RabbitMQ on `5674`
+- RabbitMQ management UI on `15674`
+- React frontend through Vite on `5179`
 
 ## Recommended Next Evolution After MVP
 

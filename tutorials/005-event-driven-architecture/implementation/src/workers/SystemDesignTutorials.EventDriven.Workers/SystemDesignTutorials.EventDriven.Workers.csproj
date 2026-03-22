@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <UserSecretsId>dotnet-SystemDesignTutorials.EventDriven.Workers-cc15ea9f-e474-46e4-b413-59046c4d6f9f</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.5.3" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\SystemDesignTutorials.EventDriven.Core\SystemDesignTutorials.EventDriven.Core.csproj" />
+    <ProjectReference Include="..\..\shared\SystemDesignTutorials.EventDriven.Contracts\SystemDesignTutorials.EventDriven.Contracts.csproj" />
+  </ItemGroup>
+</Project>

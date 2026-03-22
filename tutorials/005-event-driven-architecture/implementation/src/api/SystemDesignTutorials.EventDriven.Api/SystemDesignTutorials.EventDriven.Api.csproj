@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.5.3" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.4" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\SystemDesignTutorials.EventDriven.Core\SystemDesignTutorials.EventDriven.Core.csproj" />
+    <ProjectReference Include="..\..\shared\SystemDesignTutorials.EventDriven.Contracts\SystemDesignTutorials.EventDriven.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

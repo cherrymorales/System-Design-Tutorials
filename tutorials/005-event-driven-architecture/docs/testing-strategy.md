@@ -127,3 +127,13 @@ The `005` MVP is not complete unless:
 - contract tests cover event payload expectations
 - frontend tests cover the core operator path
 - smoke tests prove the end-to-end asynchronous behavior
+
+## Current Implementation Coverage
+
+The implemented `005` tutorial currently includes:
+
+- backend workflow and projection tests
+- backend API integration tests for auth and asset submission
+- contract tests for event shape and shared message expectations
+- frontend workflow tests for login and asset registration
+- Playwright smoke validation of the upload-to-ready happy path against the composed local stack

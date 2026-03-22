@@ -91,15 +91,20 @@ Core workflow in scope:
 
 ## Implementation Status
 
-This tutorial is now documentation-ready but not implemented yet.
+This tutorial is now implemented through Phases 1 to 4.
 
 Implemented now:
 
-- full tutorial baseline for learning, planning, architecture, deployment, and testing
+- API, worker, shared contracts/core, and React operations console
+- RabbitMQ-backed local runtime with PostgreSQL persistence
+- asset registration, upload-complete initiation, asynchronous fan-out processing, readiness, and failure projection handling
+- backend tests, frontend tests, contract tests, and smoke validation of the main ready-state path
 
-Not started yet:
+Remaining future evolution:
 
-- the buildable `005` example implementation
+- richer retry/dead-letter operator tooling
+- more advanced observability and replay workflows
+- packaging changes if the tutorial later needs hosted SPA assets rather than Vite-based local development
 
 ## MVP Testing Position
 
@@ -126,7 +131,7 @@ The MVP is only considered complete when it includes:
 
 - developers learning when asynchronous event handling is justified
 - architects comparing request-driven and event-driven designs
-- contributors who need a concrete baseline before implementation begins
+- contributors who need a concrete baseline before extending the implementation
 
 ## What You Should Learn From This Tutorial
 
